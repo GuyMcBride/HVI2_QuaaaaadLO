@@ -78,17 +78,17 @@ def _defineSequences(config, hviSystem):
     _declareHviRegisters(config, sequencer)
     #Reset the LOs and intialize any registers
     reset_block = sequencer.sync_sequence.add_sync_multi_sequence_block("ResetPhase", 30)
-# TODO: Fix this when HVI iiteration issue fixed 
+# TODO: Fix this when HVI iteration issue fixed 
     for ii in range(len(hviSystem.engines)):
         if 'M32' in hviSystem.engines[ii].name:
-            _resetPhaseSequence(reset_block.sequences[hviSystem.engines[ii].name])
+            _Sequences.resetPhase(reset_block.sequences[hviSystem.engines[ii].name])
 
     #Issue triggers to all AWGs and DAQ channels
     sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerAll", 220)
-# TODO: Fix this when HVI iiteration issue fixed 
+# TODO: Fix this when HVI iteration issue fixed 
     log.info("Creating Sequences for Triggering Loop...")
     for ii in range(len(hviSystem.engines)):
-        _triggerLoopSequence(sync_block.sequences[hviSystem.engines[ii].name])
+        _Sequences.triggerLoop(sync_block.sequences[hviSystem.engines[ii].name])
     return(sequencer)
 
 def _declareHviRegisters(config, sequencer):
@@ -105,65 +105,64 @@ def _declareHviRegisters(config, sequencer):
             register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
             register.initial_value = constant.value
         
-# for module in config.hvi.modules:
-#         for register in module.hviRegisters:
-#             engine_name = "{}_{}".format(module.model, module.slot)
-#             log.info("Defining register: {} in module: {}, value: {}".format(engine_name, 
-#                                                                              register.name, 
-#                                                                              register.value))
-#             registers = sequencer.sync_sequence.scopes[engine_name].registers
-#             phaseReset = registers.add(register.name, kthvi.RegisterSize.SHORT)
-#             phaseReset.initial_value = register.value
 
-def _resetPhaseSequence(sequence):
-    regCmd = sequence.instruction_set.fpga_register_write
-    phaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["Register_Bank_PhaseReset"]
-    # Set the Phase Reset line to the LOs low
-    instruction = sequence.add_instruction("PrePhaseReset", 60, regCmd.id)
-    instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
-    instruction.set_parameter(regCmd.value.id, 0)
-    # Set the Phase Reset line to the LOs High (cause them to enter 'reset state')
-    instruction = sequence.add_instruction("PhaseReset", 60, regCmd.id)
-    instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
-    instruction.set_parameter(regCmd.value.id, 1)
-    # Set the Phase Reset line to the LOs low (cause them to start up)
-    instruction = sequence.add_instruction("PostPhaseReset", 60, regCmd.id)
-    instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
-    instruction.set_parameter(regCmd.value.id, 0)
+class _Sequences:
+    def resetPhase(sequence):
+        phaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["Register_Bank_PhaseReset"]
+        # Set the Phase Reset line to the LOs low
+        _Statements.writeFpgaRegister(sequence, 'Pre Phase Reset', phaseReset_register, 0)
+        # Set the Phase Reset line to the LOs High (cause them to enter 'reset state')
+        _Statements.writeFpgaRegister(sequence, 'Phase Reset', phaseReset_register, 0)
+        # Set the Phase Reset line to the LOs low (cause them to start up)
+        _Statements.writeFpgaRegister(sequence, 'Post Phase Reset', phaseReset_register, 0)
+    
+    def triggerLoop(sequence):
+        whileSequence = _Statements.whileLoop(sequence, 
+                                              "Loop Triggers",
+                                              sequence.scope.registers['NumberOfLoops'])
+        _Statements.triggerAll(whileSequence, "Trigger All Channels")
+        _Statements.decrementRegister(whileSequence, 
+                                         "Decrement Loop Counter", 
+                                         sequence.scope.registers['NumberOfLoops'],
+                                         200000)
+    
 
-def _triggerLoopSequence(sequence):
-    whileSequence = _whileStatement(sequence, 
-                                    sequence.scope.registers['NumberOfLoops'])
-    log.info("...Add 'Trigger All' instruction to {}...".format(sequence.engine.name))
-    _triggerAllStatement(whileSequence)
-    _decrementLoopCounter(whileSequence, sequence.scope.registers['NumberOfLoops'])
+class _Statements:
+    def whileLoop(sequence, name, loopCounter):
+        log.info("...Add 'While...' instruction to {}...".format(sequence.engine.name))
+        condition = kthvi.Condition.register_comparison(loopCounter, 
+                                                        kthvi.ComparisonOperator.GREATER_THAN, 
+                                                        1)
+        whileLoop = sequence.add_while(name, 70, condition)
+        return(whileLoop.sequence)
 
-
-def _whileStatement(sequence, loopCounter):
-    condition = kthvi.Condition.register_comparison(loopCounter, 
-                                                    kthvi.ComparisonOperator.GREATER_THAN, 
-                                                    1)
-    whileLoop = sequence.add_while("Loop Triggers", 70, condition)
-    return(whileLoop.sequence)
-
-def _triggerAllStatement(sequence):
-    actionCmd = sequence.instruction_set.action_execute
-    actionParams = [sequence.engine.actions['trigger1'],
-                    sequence.engine.actions['trigger2'],
-                    sequence.engine.actions['trigger3'],
-                    sequence.engine.actions['trigger4']]
-    instruction = sequence.add_instruction("Trigger All Channels", 
-                                           100, 
-                                           actionCmd.id)
-    instruction.set_parameter(actionCmd.action.id, actionParams)
-
-def _decrementLoopCounter(sequence, counter):
-    if sequence.scope.registers.count > 0:
+    def triggerAll(sequence, name):
+        log.info("...Add 'TriggerAll' instruction to {}...".format(sequence.engine.name))
+        actionCmd = sequence.instruction_set.action_execute
+        actionParams = [sequence.engine.actions['trigger1'],
+                        sequence.engine.actions['trigger2'],
+                        sequence.engine.actions['trigger3'],
+                        sequence.engine.actions['trigger4']]
+        instruction = sequence.add_instruction(name, 
+                                               100, 
+                                               actionCmd.id)
+        instruction.set_parameter(actionCmd.action.id, actionParams)
+    
+    def decrementRegister(sequence, name, counter, delay = 10):
         log.info("...Add 'Decrement loop counter' instruction to {}...".format(sequence.engine.name))
-        instruction = sequence.add_instruction("Decrement Loop Counter", 
-                                                200000, 
-                                                sequence.instruction_set.subtract.id)
+        instruction = sequence.add_instruction(name, 
+                                               delay, 
+                                               sequence.instruction_set.subtract.id)
         instruction.set_parameter(sequence.instruction_set.subtract.destination.id, counter)
         instruction.set_parameter(sequence.instruction_set.subtract.left_operand.id, counter)
         instruction.set_parameter(sequence.instruction_set.subtract.right_operand.id, 1)
-
+    
+    def writeFpgaRegister(sequence, name, register, value):
+        log.info("...Add {} instruction to {}...".format(name,
+                                                         sequence.engine.name))
+        regCmd = sequence.instruction_set.fpga_register_write
+        instruction = sequence.add_instruction(name, 
+                                               60, 
+                                               regCmd.id)
+        instruction.set_parameter(regCmd.fpga_register.id, register)
+        instruction.set_parameter(regCmd.value.id, 0)
