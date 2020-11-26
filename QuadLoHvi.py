@@ -144,7 +144,7 @@ class _Statements:
                         sequence.engine.actions['trigger3'],
                         sequence.engine.actions['trigger4']]
         instruction = sequence.add_instruction(name, 
-                                               100, 
+                                               20, 
                                                actionCmd.id)
         instruction.set_parameter(actionCmd.action.id, actionParams)
     
@@ -161,7 +161,7 @@ class _Statements:
         log.info("......{}".format(name))
         regCmd = sequence.instruction_set.fpga_register_write
         instruction = sequence.add_instruction(name, 
-                                               60, 
+                                               10, 
                                                regCmd.id)
         instruction.set_parameter(regCmd.fpga_register.id, register)
         instruction.set_parameter(regCmd.value.id, value)
