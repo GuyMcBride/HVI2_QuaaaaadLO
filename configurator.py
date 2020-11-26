@@ -21,6 +21,9 @@ log = logging.getLogger(__name__)
 def main():
     # repeats: Number of triggers to generate
     repeats = 5
+    
+    # pulseGap: Gap between pulses
+    pulseGap = 200E-6
 
     # mode: 0 = output individual waveform from one LO
     #       1 = output superimposed waveforms from all LOs
@@ -129,13 +132,14 @@ def main():
     # HviConstant:
     #   #1 - name
     #   #2 - value
-    NumberOfLoops = [HviConstant('NumberOfLoops', repeats)]
+    hviConstants = [HviConstant('NumberOfLoops', repeats),
+                    HviConstant('Gap', int(pulseGap / 1E-9))]
     
     # HVI:
     #    #1 - PXI Trigger Lines to use
     #    #2 - List of Modules to include in HVI
     #    #3 - List of constants
-    hvi = Hvi([5, 6, 7], modules, NumberOfLoops)
+    hvi = Hvi([5, 6, 7], modules, hviConstants)
     
     # Config:
     #   #1 - List of Module details

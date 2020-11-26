@@ -92,7 +92,7 @@ def _defineSequences(config, hviSystem):
     return(sequencer)
 
 def _declareHviRegisters(config, sequencer):
-# TODO: Fix this when HVI iiteration issue fixed 
+# TODO: Fix this when HVI iteration issue fixed 
     log.info("Creating registers for triggering Loop...")
     for constant in config.hvi.constants:
         engines = sequencer.sync_sequence.engines
@@ -117,6 +117,7 @@ class _Sequences:
         _Statements.writeFpgaRegister(sequence, 'Post Phase Reset', phaseReset_register, 0)
     
     def triggerLoop(sequence):
+        loopDelay = sequence.scope.registers['Gap'].initial_value
         whileSequence = _Statements.whileLoop(sequence, 
                                               "Loop Triggers",
                                               sequence.scope.registers['NumberOfLoops'])
@@ -124,7 +125,7 @@ class _Sequences:
         _Statements.decrementRegister(whileSequence, 
                                          "Decrement Loop Counter", 
                                          sequence.scope.registers['NumberOfLoops'],
-                                         200000)
+                                         loopDelay)
     
 
 class _Statements:
