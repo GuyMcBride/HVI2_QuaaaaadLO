@@ -101,8 +101,9 @@ def _declareHviRegisters(config, sequencer):
         engines = sequencer.sync_sequence.engines
         scopes = sequencer.sync_sequence.scopes
         for ii in range(len(scopes)):
-            log.info("Adding register: {} to engine: {}".format(constant.name, 
-                                                                engines[ii].name))
+            log.info("Adding register: {}, initial value: {} to module: {}".format(constant.name,
+                                                                                   constant.value,
+                                                                                   engines[ii].name))
             registers = scopes[ii].registers
             register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
             register.initial_value = constant.value
