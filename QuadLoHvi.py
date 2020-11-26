@@ -112,7 +112,7 @@ class _Sequences:
         # Set the Phase Reset line to the LOs low
         _Statements.writeFpgaRegister(sequence, 'Pre Phase Reset', phaseReset_register, 0)
         # Set the Phase Reset line to the LOs High (cause them to enter 'reset state')
-        _Statements.writeFpgaRegister(sequence, 'Phase Reset', phaseReset_register, 0)
+        _Statements.writeFpgaRegister(sequence, 'Phase Reset', phaseReset_register, 1)
         # Set the Phase Reset line to the LOs low (cause them to start up)
         _Statements.writeFpgaRegister(sequence, 'Post Phase Reset', phaseReset_register, 0)
     
@@ -166,4 +166,4 @@ class _Statements:
                                                60, 
                                                regCmd.id)
         instruction.set_parameter(regCmd.fpga_register.id, register)
-        instruction.set_parameter(regCmd.value.id, 0)
+        instruction.set_parameter(regCmd.value.id, value)
