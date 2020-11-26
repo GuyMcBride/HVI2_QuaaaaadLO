@@ -45,20 +45,16 @@ class Queue:
     items : [QueueItem]
 
 @dataclass
-class PcFpgaRegister:
-    name : str = ''
-    value : int = 0
-
-@dataclass
-class HviFpgaRegister:
+class Register:
     name : str = ''
     value : int = 0
 
 @dataclass
 class Fpga:
-    file_name : str = ''
-    pcRegisters : [PcFpgaRegister] = field(default_factory=list)
-    hviRegisters : [HviFpgaRegister] = field(default_factory=list)
+    image_file : str = ''
+    vanilla_file: str = ''
+    pcRegisters : [Register] = field(default_factory=list)
+    hviRegisters : [Register] = field(default_factory=list)
 
 @dataclass
 class SubPulseDescriptor:
@@ -102,9 +98,15 @@ class DigDescriptor(ModuleDescriptor):
     handle : int = 0
     
 @dataclass
+class HviConstant:
+    name : str = ''
+    value : int = 0
+
+@dataclass
 class Hvi:
     triggers : [int]
     modules : [ModuleDescriptor]
+    constants : [HviConstant] = field(default_factory=list)
 
 @dataclass
 class Config:

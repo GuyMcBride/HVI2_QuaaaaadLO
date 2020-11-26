@@ -58,7 +58,23 @@ def configureModules():
         if module.model == 'M3202A':
             configureAwg(chassis, module)
         elif module.model == 'M3102A':
-            configureDig(chassis, module)                
+            configureDig(chassis, module)
+
+def _configureFpga(module):
+    if module.fpga.image_file != '':
+        log.info("Loading FPGA image: {}".format(module.fpga.image_file))
+        error = module.handle.FPGAload(os.getcwd() + '\\' + module.fpga.image_file)
+        if error < 0:
+           log.error('Loading FPGA bitfile: {} {}'.format(error, 
+                                                          key.SD_Error.getErrorMessage(error)))
+
+    log.info("Writing {} FPGA registers".format(len(module.fpga.pcRegisters)))
+    for register in module.fpga.pcRegisters:
+        sbReg = module.handle.FPGAgetSandBoxRegister(register.name)
+        error = sbReg.writeRegisterInt32(register.value)
+        if error < 0:
+            log.error("Error writing register: {}".format(register.name))
+    
 
 def configureAwg(chassis, module):
     log.info("Configuring AWG in slot {}...".format(module.slot))
@@ -70,19 +86,7 @@ def configureAwg(chassis, module):
                                           key.SD_Compatibility.KEYSIGHT)
     if error < 0:
         log.info("Error Opening - {}".format(error))
-    log.info("Loading FPGA image: {}".format(module.fpga.file_name))
-    error = awg.FPGAload(os.getcwd() + '\\' + module.fpga.file_name)
-    if error < 0:
-       log.error('Loading FPGA bitfile: {} {}'.format(error, 
-                                                      key.SD_Error.getErrorMessage(error)))
-
-    log.info("Writing {} FPGA registers".format(len(module.fpga.pcRegisters)))
-    for register in module.fpga.pcRegisters:
-        sbReg = module.handle.FPGAgetSandBoxRegister(register.name)
-        error = sbReg.writeRegisterInt32(register.value)
-        if error < 0:
-            log.error("Error writing register: {}".format(register.name))
-
+    _configureFpga(module)
     #Clear all queues and waveforms
     awg.waveformFlush()
     for channel in range(module.channels):
@@ -103,6 +107,12 @@ def closeModules():
             stopAwg(module)
         elif module.model == "M3102A":
             stopDig(module)
+        if module.fpga.image_file != '':
+            log.info("Loading FPGA image: {}".format(module.fpga.vanilla_file))
+            error = module.handle.FPGAload(os.getcwd() + '\\' + module.fpga.vanilla_file)
+            if error < 0:
+               log.error('Loading FPGA bitfile: {} {}'.format(error, 
+                                                              key.SD_Error.getErrorMessage(error)))
         module.handle.close()
     log.info("Finished stopping and closing Modules")
 
@@ -222,12 +232,7 @@ def configureDig(chassis, module):
                                           key.SD_Compatibility.KEYSIGHT)
     if error < 0:
         log.info("Error Opening - {}".format(error))
-    if module.fpga.file_name != "":
-        log.info("Loading FPGA image: {}".format(module.fpga.file_name))
-        error = dig.FPGAload(os.getcwd() + '\\' + module.fpga.file_name)
-        if error < 0:
-           log.error('Loading FPGA bitfile: {} {}'.format(error, 
-                                                          key.SD_Error.getErrorMessage(error)))
+    _configureFpga(module)
    #Configure all channels to be DC coupled and 50 Ohm
     for channel in range(1, module.channels + 1):
         error = dig.DAQflush(channel)
@@ -235,8 +240,7 @@ def configureDig(chassis, module):
             log.info("Error Flushing")
         log.info ("Configuring Digitizer in slot {}, Channel {}".format (module.slot,
                                                                       channel))
-        error = dig.channelInputConfig(
-                                        channel, 
+        error = dig.channelInputConfig( channel, 
                                         2.0,
                                         key.AIN_Impedance.AIN_IMPEDANCE_50,
                                         key.AIN_Coupling.AIN_COUPLING_DC)

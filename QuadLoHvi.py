@@ -68,53 +68,102 @@ def _defineSystem(config):
         
         # Register the FPGA resources used by HVI (exposes the registers)
         if module.model == "M3202A":
-            sys_def.engines[engine_name].fpga_sandboxes[0].load_from_k7z(os.getcwd() + '\\' + module.fpga.file_name)
+            sys_def.engines[engine_name].fpga_sandboxes[0].load_from_k7z(os.getcwd() + '\\' + module.fpga.image_file)
     return(sys_def)
 
     
 def _defineSequences(config, hviSystem):
     log.info("Creating Main Sequencer Block...")
     sequencer = kthvi.Sequencer("QuadLoSequencer", hviSystem)
-    _declareFpgaRegisters(config, sequencer)
+    _declareHviRegisters(config, sequencer)
     #Reset the LOs and intialize any registers
     reset_block = sequencer.sync_sequence.add_sync_multi_sequence_block("ResetPhase", 30)
-    _resetPhaseSequence(reset_block.sequences['M3202A_2'])
-    _resetPhaseSequence(reset_block.sequences['M3202A_4'])
+# TODO: Fix this when HVI iiteration issue fixed 
+    for ii in range(len(hviSystem.engines)):
+        if 'M32' in hviSystem.engines[ii].name:
+            _resetPhaseSequence(reset_block.sequences[hviSystem.engines[ii].name])
+
     #Issue triggers to all AWGs and DAQ channels
-    sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerAll", 30)
-    _triggerAllSequence(sync_block.sequences['M3202A_2'])
-    _triggerAllSequence(sync_block.sequences['M3202A_4'])
-    _triggerAllSequence(sync_block.sequences['M3102A_7'])
+    sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerAll", 220)
+# TODO: Fix this when HVI iiteration issue fixed 
+    log.info("Creating Sequences for Triggering Loop...")
+    for ii in range(len(hviSystem.engines)):
+        _triggerLoopSequence(sync_block.sequences[hviSystem.engines[ii].name])
     return(sequencer)
 
-def _declareFpgaRegisters(config, sequencer):
-    for module in config.hvi.modules:
-        for register in module.fpga.hviRegisters:
-            engine_name = "{}_{}".format(module.model, module.slot)
-            registers = sequencer.sync_sequence.scopes[engine_name].registers
-            phaseReset = registers.add(register.name, kthvi.RegisterSize.SHORT)
-            phaseReset.initial_value = register.value
+def _declareHviRegisters(config, sequencer):
+# TODO: Fix this when HVI iiteration issue fixed 
+    log.info("Creating registers for triggering Loop...")
+    for constant in config.hvi.constants:
+        engines = sequencer.sync_sequence.engines
+        scopes = sequencer.sync_sequence.scopes
+        for ii in range(len(scopes)):
+            scope = scopes[ii]
+            log.info("Adding register: {} to engine: {}".format(constant.name, 
+                                                                engines[ii].name))
+            registers = scope.registers
+            register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
+            register.initial_value = constant.value
+        
+# for module in config.hvi.modules:
+#         for register in module.hviRegisters:
+#             engine_name = "{}_{}".format(module.model, module.slot)
+#             log.info("Defining register: {} in module: {}, value: {}".format(engine_name, 
+#                                                                              register.name, 
+#                                                                              register.value))
+#             registers = sequencer.sync_sequence.scopes[engine_name].registers
+#             phaseReset = registers.add(register.name, kthvi.RegisterSize.SHORT)
+#             phaseReset.initial_value = register.value
 
 def _resetPhaseSequence(sequence):
     regCmd = sequence.instruction_set.fpga_register_write
     phaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["Register_Bank_PhaseReset"]
-    instruction = sequence.add_instruction("AssertPhaseReset", 60, regCmd.id)
+    # Set the Phase Reset line to the LOs low
+    instruction = sequence.add_instruction("PrePhaseReset", 60, regCmd.id)
+    instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
+    instruction.set_parameter(regCmd.value.id, 0)
+    # Set the Phase Reset line to the LOs High (cause them to enter 'reset state')
+    instruction = sequence.add_instruction("PhaseReset", 60, regCmd.id)
     instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
     instruction.set_parameter(regCmd.value.id, 1)
-    instruction = sequence.add_instruction("DisassertPhaseReset", 60, regCmd.id)
+    # Set the Phase Reset line to the LOs low (cause them to start up)
+    instruction = sequence.add_instruction("PostPhaseReset", 60, regCmd.id)
     instruction.set_parameter(regCmd.fpga_register.id, phaseReset_register)
     instruction.set_parameter(regCmd.value.id, 0)
 
-def _triggerAllSequence(sequence):
-    log.info("Creating Sequence for Main AWG ({})...".format(sequence.engine.name))
-    log.info("...Add 'Trigger All' instruction to triggerAWGs on all channels...")
+def _triggerLoopSequence(sequence):
+    whileSequence = _whileStatement(sequence, 
+                                    sequence.scope.registers['NumberOfLoops'])
+    log.info("...Add 'Trigger All' instruction to {}...".format(sequence.engine.name))
+    _triggerAllStatement(whileSequence)
+    _decrementLoopCounter(whileSequence, sequence.scope.registers['NumberOfLoops'])
+
+
+def _whileStatement(sequence, loopCounter):
+    condition = kthvi.Condition.register_comparison(loopCounter, 
+                                                    kthvi.ComparisonOperator.GREATER_THAN, 
+                                                    1)
+    whileLoop = sequence.add_while("Loop Triggers", 70, condition)
+    return(whileLoop.sequence)
+
+def _triggerAllStatement(sequence):
     actionCmd = sequence.instruction_set.action_execute
     actionParams = [sequence.engine.actions['trigger1'],
                     sequence.engine.actions['trigger2'],
                     sequence.engine.actions['trigger3'],
                     sequence.engine.actions['trigger4']]
     instruction = sequence.add_instruction("Trigger All Channels", 
-                                           10, 
+                                           100, 
                                            actionCmd.id)
     instruction.set_parameter(actionCmd.action.id, actionParams)
-    
+
+def _decrementLoopCounter(sequence, counter):
+    if sequence.scope.registers.count > 0:
+        log.info("...Add 'Decrement loop counter' instruction to {}...".format(sequence.engine.name))
+        instruction = sequence.add_instruction("Decrement Loop Counter", 
+                                                200000, 
+                                                sequence.instruction_set.subtract.id)
+        instruction.set_parameter(sequence.instruction_set.subtract.destination.id, counter)
+        instruction.set_parameter(sequence.instruction_set.subtract.left_operand.id, counter)
+        instruction.set_parameter(sequence.instruction_set.subtract.right_operand.id, 1)
+
