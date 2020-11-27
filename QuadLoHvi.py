@@ -107,12 +107,6 @@ def _declareHviRegisters(config, sequencer):
             registers = scopes[ii].registers
             register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
             register.initial_value = constant.value
-        log.info("Adding register: {}, initial value: {} to module: {}".format('Dummy',
-                                                                               0,
-                                                                               engines[ii].name))
-        registers = scopes[ii].registers
-        register = registers.add('Dummy', kthvi.RegisterSize.SHORT)
-        register.initial_value = 0
         
 
 class _Sequences:
@@ -130,14 +124,9 @@ class _Sequences:
         _Statements.triggerAll(whileSequence, "Trigger All Channels")
         _Statements.decrementRegister(whileSequence, 
                                          "Decrement Loop Counter", 
-                                         sequence.scope.registers['NumberOfLoops'],
-                                         loopDelay)
-        _Statements.decrementRegister(whileSequence, 
-                                         "Dummy to provide more time", 
-                                         sequence.scope.registers['Dummy'],
-                                         50)
+                                         sequence.scope.registers['NumberOfLoops'])
+        whileSequence.add_delay("Counter Settle Time", loopDelay)
     
-
 class _Statements:
     def whileLoop(sequence, name, loopCounter):
         log.info("......While...")
