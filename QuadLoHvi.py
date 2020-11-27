@@ -97,16 +97,22 @@ def _defineSequences(config, hviSystem):
 def _declareHviRegisters(config, sequencer):
 # TODO: Fix this when HVI iteration issue fixed 
     log.info("Declaring HVI registers...")
-    for constant in config.hvi.constants:
-        engines = sequencer.sync_sequence.engines
-        scopes = sequencer.sync_sequence.scopes
-        for ii in range(len(scopes)):
+    engines = sequencer.sync_sequence.engines
+    scopes = sequencer.sync_sequence.scopes
+    for ii in range(len(scopes)):
+        for constant in config.hvi.constants:
             log.info("Adding register: {}, initial value: {} to module: {}".format(constant.name,
                                                                                    constant.value,
                                                                                    engines[ii].name))
             registers = scopes[ii].registers
             register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
             register.initial_value = constant.value
+        log.info("Adding register: {}, initial value: {} to module: {}".format('Dummy',
+                                                                               0,
+                                                                               engines[ii].name))
+        registers = scopes[ii].registers
+        register = registers.add('Dummy', kthvi.RegisterSize.SHORT)
+        register.initial_value = 0
         
 
 class _Sequences:
@@ -126,6 +132,10 @@ class _Sequences:
                                          "Decrement Loop Counter", 
                                          sequence.scope.registers['NumberOfLoops'],
                                          loopDelay)
+        _Statements.decrementRegister(whileSequence, 
+                                         "Dummy to provide more time", 
+                                         sequence.scope.registers['Dummy'],
+                                         50)
     
 
 class _Statements:
@@ -133,7 +143,7 @@ class _Statements:
         log.info("......While...")
         condition = kthvi.Condition.register_comparison(loopCounter, 
                                                         kthvi.ComparisonOperator.GREATER_THAN, 
-                                                        1)
+                                                        0)
         whileLoop = sequence.add_while(name, 70, condition)
         return(whileLoop.sequence)
 
@@ -150,7 +160,7 @@ class _Statements:
         instruction.set_parameter(actionCmd.action.id, actionParams)
     
     def decrementRegister(sequence, name, counter, delay = 10):
-        log.info("......Decrement loop counter")
+        log.info("......Decrement Register: {}".format(counter.name))
         instruction = sequence.add_instruction(name, 
                                                delay, 
                                                sequence.instruction_set.subtract.id)
