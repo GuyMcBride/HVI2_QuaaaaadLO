@@ -78,7 +78,7 @@ def _defineSequences(config, hviSystem):
     _declareHviRegisters(config, sequencer)
 
     #Reset the LOs and intialize any registers
-    reset_block = sequencer.sync_sequence.add_sync_multi_sequence_block("ResetPhase", 30)
+    reset_block = sequencer.sync_sequence.add_sync_multi_sequence_block("InitializeBlock", 30)
 # TODO: Fix this when HVI iteration issue fixed 
     log.info("Creating Sequences for Initialization Block...")
     for ii in range(len(hviSystem.engines)):
@@ -86,7 +86,7 @@ def _defineSequences(config, hviSystem):
             log.info("...Sequence for: {}".format(hviSystem.engines[ii].name))
             _Sequences.resetPhase(reset_block.sequences[hviSystem.engines[ii].name])
 
-    sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerAll", 220)
+    sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerBlock", 10)
 # TODO: Fix this when HVI iteration issue fixed 
     log.info("Creating Sequences for Triggering Loop Block...")
     for ii in range(len(hviSystem.engines)):
