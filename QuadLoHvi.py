@@ -111,10 +111,19 @@ def _declareHviRegisters(config, sequencer):
 
 class _Sequences:
     def resetPhase(sequence):
-        phaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["Register_Bank_PhaseReset"]
-        _Statements.writeFpgaRegister(sequence, 'Pre Phase Reset', phaseReset_register, 0)
-        _Statements.writeFpgaRegister(sequence, 'Phase Reset', phaseReset_register, 1)
-        _Statements.writeFpgaRegister(sequence, 'Post Phase Reset', phaseReset_register, 0)
+        ch1PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["HVI_CH1_PhaseReset"]
+        if sequence.engine.fpga_sandboxes[0].fpga_registers.count == 2:
+            _Statements.writeFpgaRegister(sequence, 'CH1 Pre Phase Reset', ch1PhaseReset_register, 0)
+            _Statements.writeFpgaRegister(sequence, 'CH1 Phase Reset', ch1PhaseReset_register, 1)
+            _Statements.writeFpgaRegister(sequence, 'CH1 Post Phase Reset', ch1PhaseReset_register, 0)
+        else:
+            ch4PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["HVI_CH4_PhaseReset"]
+            _Statements.writeFpgaRegister(sequence, 'CH1 Pre Phase Reset', ch1PhaseReset_register, 0)
+            _Statements.writeFpgaRegister(sequence, 'CH4 Pre Phase Reset', ch4PhaseReset_register, 0)
+            _Statements.writeFpgaRegister(sequence, 'CH1 Phase Reset', ch1PhaseReset_register, 1)
+            _Statements.writeFpgaRegister(sequence, 'CH4 Phase Reset', ch4PhaseReset_register, 1)
+            _Statements.writeFpgaRegister(sequence, 'CH1 Post Phase Reset', ch1PhaseReset_register, 0)
+            _Statements.writeFpgaRegister(sequence, 'CH4 Post Phase Reset', ch4PhaseReset_register, 0)
     
     def triggerLoop(sequence):
         loopDelay = sequence.scope.registers['Gap'].initial_value

@@ -23,14 +23,14 @@ def main():
     repeats = 10
     
     # pulseGap: Gap between pulses
-    pulseGap = 200E-6
+    pulseGap = 200.010E-6
 
     # mode: 0 = output individual waveform from one LO
     #       1 = output superimposed waveforms from all LOs
     mode = 0
     
     #Lo frequency definitions (card_channel_LO)
-    lo1_1_0 = 10E6
+    lo1_1_0 = 10.0E6
     lo1_1_1 = 30E6
     lo1_1_2 = 50E6
     lo1_1_3 = 70E6
@@ -46,7 +46,16 @@ def main():
                       Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
                       Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
                       Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
-                      Register('PC_CH1_PhaseInc3B', B(lo1_1_3))]
+                      Register('PC_CH1_PhaseInc3B', B(lo1_1_3)),
+                      Register('PC_CH4_PhaseSel', mode),
+                      Register('PC_CH4_PhaseInc0A', A(lo1_1_0)),
+                      Register('PC_CH4_PhaseInc0B', B(lo1_1_0)),
+                      Register('PC_CH4_PhaseInc1A', A(lo1_1_1)),
+                      Register('PC_CH4_PhaseInc1B', B(lo1_1_1)),
+                      Register('PC_CH4_PhaseInc2A', A(lo1_1_2)),
+                      Register('PC_CH4_PhaseInc2B', B(lo1_1_2)),
+                      Register('PC_CH4_PhaseInc3A', A(lo1_1_3)),
+                      Register('PC_CH4_PhaseInc3B', B(lo1_1_3))]
     
     hviFpgaRegisters = [Register('RegisterBank_PhaseReset', 0)]
     
@@ -54,7 +63,7 @@ def main():
     #   #1 - filename of bit image
     #   #2 - filename of 'vanilla' bit image
     #   #3 - list of writable register values
-    fpga1 = Fpga("./FPGA/QuadLoCh1_4_00_95.k7z",
+    fpga1 = Fpga("./FPGA/QuadLoCh1and4_4_00_95.k7z",
                  "./FPGA/M3202A_Vanilla_HVI2.k7z", 
                  pcFpgaRegisters,
                  hviFpgaRegisters)
@@ -91,7 +100,7 @@ def main():
     #    #2 - IsCyclical 
     #    #3 - List of QueueItem details (waveforms)
     queue1 = Queue(1, True, [QueueItem(1, True, 0, 1)])
-    queue2 = Queue(4, True, [QueueItem(2, True, 0, 1)])
+    queue2 = Queue(4, True, [QueueItem(1, True, 0, 1)])
 
     # DaqDescriptor:
     #    #1 - Channel
