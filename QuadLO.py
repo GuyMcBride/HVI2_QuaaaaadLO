@@ -39,6 +39,8 @@ def main():
     for module in config.modules:
         if module.model == 'M3102A':
             digData.append(getDigData(module))
+            timebase = np.arange(0, len(digData[0][0][0]))
+            timebase = timebase / module.sample_rate
     log.info("Closing down hardware...")
     QuadLoHvi.close()
     closeModules()
@@ -46,7 +48,8 @@ def main():
     for daqData in digData:
         for channels in daqData:
             for wave in channels:
-                plt.plot(wave)
+                plt.plot(timebase, wave)
+    plt.show()
    
 def configureModules():    
     chassis = key.SD_Module.getChassisByIndex(1)
