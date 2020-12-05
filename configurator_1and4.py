@@ -20,14 +20,14 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    repeats = 10
+    repeats = 2
     
     # pulseGap: Gap between pulses
     pulseGap = 200.010E-6
 
     # mode: 0 = output individual waveform from one LO
     #       1 = output superimposed waveforms from all LOs
-    mode = 0
+    mode = 1
     
     #Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10.0E6
@@ -75,10 +75,13 @@ def main():
     #            (needs to be long enough for envelope shaping)
     #    #4 - Amplitude (sum of amplitudes must be < 1.0)
     #    #5 - pulse shaping filter bandwidth
-    pulseGroup = [SubPulseDescriptor(0, 10e-6, 1E-06,  0.3,    1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06, -0.1,   1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06,  0.06,  1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06, -0.043, 1E06)]
+    pulseGroup1a = [SubPulseDescriptor(0, 10e-6, 1E-06,  0.3,    1E06),
+                    SubPulseDescriptor(0, 10e-6, 1E-06, 0.3,   1E06),
+                    SubPulseDescriptor(0, 10e-6, 1E-06, 0, 1E06)]
+
+    pulseGroup1b = [SubPulseDescriptor(0, 10e-6, 1E-06,  0.3,    1E06),
+                    SubPulseDescriptor(0, 10e-6, 1E-06, 0,   1E06),
+                    SubPulseDescriptor(0, 10e-6, 1E-06, 0.2, 1E06)]
 
     pulseGroup2 = [SubPulseDescriptor(10E6, 10e-6, 1E-06, 0.5, 1E06)]
     
@@ -87,8 +90,9 @@ def main():
     #    #2 - The length of the pulse window 
     #            (must be long enough to hold all pulse enelopes, with transition times)
     #    #3 - List of SubPulseDescriptor details - to maximum of 5.
-    pulseDescriptor1 = PulseDescriptor(1, 60e-06, pulseGroup)
-    pulseDescriptor2 = PulseDescriptor(2, 60e-06, pulseGroup2)
+    pulseDescriptor1 = PulseDescriptor(1, 60e-06, pulseGroup1a)
+    pulseDescriptor2 = PulseDescriptor(2, 60e-06, pulseGroup1b)
+    pulseDescriptor3 = PulseDescriptor(3, 60e-06, pulseGroup2)
     
     # QueueItem:
     #    #1 - PulseGroup ID that defines the waveform
@@ -99,9 +103,11 @@ def main():
     #    #1 - Channel
     #    #2 - IsCyclical 
     #    #3 - List of QueueItem details (waveforms)
-    queue1 = Queue(1, True, [QueueItem(1, True, 0, 1)])
-    queue2 = Queue(4, True, [QueueItem(1, True, 0, 1)])
-
+    queue1 = Queue(1, True, [QueueItem(1, True, 0, 1), 
+                             QueueItem(2, False, 0, 1)])
+    queue2 = Queue(4, True, [QueueItem(1, True, 0, 1),
+                             QueueItem(2, False, 0, 1)])
+ 
     # DaqDescriptor:
     #    #1 - Channel
     #    #2 - Capture Period
@@ -123,7 +129,7 @@ def main():
                          [queue1, queue2])
 
     awg2 = AwgDescriptor("M3202A", 4, 1E09, 4, fpga1,
-                         [pulseDescriptor1], 
+                         [pulseDescriptor1, pulseDescriptor2], 
                          [queue1])
 
     # DigDescriptor:
