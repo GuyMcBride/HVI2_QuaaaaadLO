@@ -39,18 +39,28 @@ def main():
     for module in config.modules:
         if module.model == 'M3102A':
             digData.append(getDigData(module))
-            timebase = np.arange(0, len(digData[0][0][0]))
-            timebase = timebase / module.sample_rate
+            sampleRate = module.sample_rate
     log.info("Closing down hardware...")
     QuadLoHvi.close()
     closeModules()
     log.info("Plotting Results...")
-    for daqData in digData:
-        for channels in daqData:
-            for wave in channels:
+    plotWaves(digData, sampleRate, "Captured Waveforms")
+
+
+def plotWaves(waves, sampleRate, title):
+    plt.figure()
+    plotnum = 0
+    for group in waves:
+        for subgroup in group:
+            plotnum = plotnum + 1
+            plt.subplot(len(group) * len(waves), 1, plotnum)
+            for wave in subgroup:
+                timebase = np.arange(0, len(wave))
+                timebase = timebase / sampleRate
                 plt.plot(timebase, wave)
+    plt.suptitle(title)
     plt.show()
-   
+
 def configureModules():    
     chassis = key.SD_Module.getChassisByIndex(1)
     if chassis < 0:
@@ -152,6 +162,18 @@ def loadWaves(module):
                                                   samples.timebase)
                     wave = samples.wave * carrier
                 waves.append(samples.wave)
+
+            wavesGroup = []
+            #Plot the waves, before they are interweaved
+            for wave in waves:
+                subgroup = []
+                subgroup.append([wave])
+                wavesGroup.append(subgroup)
+            wavesGroup.append([waves])
+            title = "Waveform {} in module {}_{}".format(pulseDescriptor.id,
+                                                      module.model,
+                                                      module.slot)
+            plotWaves(wavesGroup, module.sample_rate, title)
             wave = interweavePulses(waves)
         else:
             #not interleaved, so normal channel
