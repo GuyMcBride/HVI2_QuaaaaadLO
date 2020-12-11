@@ -111,13 +111,17 @@ def _declareHviRegisters(config, sequencer):
 
 class _Sequences:
     def resetPhase(sequence):
+        ch4PhaseReset_register = None
         ch1PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["HVI_CH1_PhaseReset"]
-        if sequence.engine.fpga_sandboxes[0].fpga_registers.count == 2:
+        try:
+            ch4PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["HVI_CH4_PhaseReset"]
+        except RuntimeError:
+            log.info("No CH4 registers detected")
+        if ch4PhaseReset_register == None:
             _Statements.writeFpgaRegister(sequence, 'CH1 Pre Phase Reset', ch1PhaseReset_register, 0)
             _Statements.writeFpgaRegister(sequence, 'CH1 Phase Reset', ch1PhaseReset_register, 1)
             _Statements.writeFpgaRegister(sequence, 'CH1 Post Phase Reset', ch1PhaseReset_register, 0)
         else:
-            ch4PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers["HVI_CH4_PhaseReset"]
             _Statements.writeFpgaRegister(sequence, 'CH1 Pre Phase Reset', ch1PhaseReset_register, 0)
             _Statements.writeFpgaRegister(sequence, 'CH4 Pre Phase Reset', ch4PhaseReset_register, 0)
             _Statements.writeFpgaRegister(sequence, 'CH1 Phase Reset', ch1PhaseReset_register, 1)
