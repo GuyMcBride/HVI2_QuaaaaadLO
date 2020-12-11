@@ -8,6 +8,7 @@ Created on Mon Nov  9 08:57:55 2020
 import os
 import yaml
 import logging
+import math
 
 from Configuration import (Config, loadConfig, 
                            AwgDescriptor, DigDescriptor,
@@ -29,22 +30,57 @@ def main():
     #       1 = output superimposed waveforms from all LOs
     mode = 0
     
+    # phaseSource : 0 = PC sets the phase source
+    #               1 = HVI sets the phase source
+    phaseSource = 0
+    
     #Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10E6
-    lo1_1_1 = 30E6
+    lo1_1_1 = 20E6
     lo1_1_2 = 50E6
     lo1_1_3 = 70E6
+    
+    lophase1_1_0 = 90
+    lophase4_1_0 = 90
+    
+    control = mode + (phaseSource << 1)
     
     # Register:
     #   #1 - name of register
     #   #2 - value to be written
-    pcFpgaRegisters = [Register('PC_CH1_PhaseSel', mode),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
-                      Register('PC_CH1_PhaseInc0B', B(lo1_1_0)),
+    pcFpgaRegisters1 = [Register('PC_CH1_Control', control),
+                      Register('PC_CH1_Q0', Q(lophase1_1_0)),
+                      Register('PC_CH1_I0', I(lophase1_1_0)),
+                      Register('PC_CH1_PhaseInc0A', A(lo1_1_1)),
+                      Register('PC_CH1_PhaseInc0A', A(lo1_1_1)),
+                      Register('PC_CH1_Q1', Q(lophase1_1_0)),
+                      Register('PC_CH1_I1', I(lophase1_1_0)),
                       Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
                       Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
+                      Register('PC_CH1_Q2', Q(lophase1_1_0)),
+                      Register('PC_CH1_I2', I(lophase1_1_0)),
                       Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
                       Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
+                      Register('PC_CH1_Q3', Q(lophase1_1_0)),
+                      Register('PC_CH1_I3', I(lophase1_1_0)),
+                      Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
+                      Register('PC_CH1_PhaseInc3B', B(lo1_1_3))]
+    
+    pcFpgaRegisters2 = [Register('PC_CH1_Control', control),
+                      Register('PC_CH1_Q0', Q(lophase4_1_0)),
+                      Register('PC_CH1_I0', I(lophase4_1_0)),
+                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
+                      Register('PC_CH1_PhaseInc0B', B(lo1_1_0)),
+                      Register('PC_CH1_Q1', Q(lophase4_1_0)),
+                      Register('PC_CH1_I1', I(lophase4_1_0)),
+                      Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
+                      Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
+                      Register('PC_CH1_Q2', Q(lophase4_1_0)),
+                      Register('PC_CH1_I2', I(lophase4_1_0)),
+                      Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
+                      Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
+                      Register('PC_CH1_Q3', Q(lophase4_1_0)),
+                      Register('PC_CH1_I3', I(lophase4_1_0)),
                       Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
                       Register('PC_CH1_PhaseInc3B', B(lo1_1_3))]
     
@@ -56,7 +92,12 @@ def main():
     #   #3 - list of writable register values
     fpga1 = Fpga("./FPGA/QuadLoCh1_4_00_95.k7z",
                  "./FPGA/M3202A_Vanilla_HVI2.k7z", 
-                 pcFpgaRegisters,
+                 pcFpgaRegisters1,
+                 hviFpgaRegisters)
+    
+    fpga2 = Fpga("./FPGA/QuadLoCh1_4_00_95.k7z",
+                 "./FPGA/M3202A_Vanilla_HVI2.k7z", 
+                 pcFpgaRegisters2,
                  hviFpgaRegisters)
     
     # SubPulseDescriptor:
@@ -66,10 +107,10 @@ def main():
     #            (needs to be long enough for envelope shaping)
     #    #4 - Amplitude (sum of amplitudes must be < 1.0)
     #    #5 - pulse shaping filter bandwidth
-    pulseGroup = [SubPulseDescriptor(0, 10e-6, 1E-06,  0.3,    1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06, -0.1,   1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06,  0.06,  1E06),
-                  SubPulseDescriptor(0, 10e-6, 1E-06, -0.043, 1E06)]
+    pulseGroup = [SubPulseDescriptor(0, 10e-6, 1E-06,  0.6,    1E06),
+                  SubPulseDescriptor(0, 10e-6, 1E-06,  0.2,   1E06),
+                  SubPulseDescriptor(0, 10e-6, 1E-06,  0.12,  1E06),
+                  SubPulseDescriptor(0, 10e-6, 1E-06,  0.086, 1E06)]
 
     pulseGroup2 = [SubPulseDescriptor(10E6, 10e-6, 1E-06, 0.5, 1E06)]
     
@@ -113,7 +154,7 @@ def main():
                          [pulseDescriptor1, pulseDescriptor2], 
                          [queue1, queue2])
 
-    awg2 = AwgDescriptor("M3202A", 4, 1E09, 4, fpga1,
+    awg2 = AwgDescriptor("M3202A", 4, 1E09, 4, fpga2,
                          [pulseDescriptor1], 
                          [queue1])
 
@@ -184,6 +225,12 @@ def B(f, fs=1E9):
     A = int(K)
     B = round((K-A) * 5**10) 
     return B
+
+def I(phase):
+    return int(round(32767 * math.cos(math.radians(phase))))
+
+def Q(phase):
+    return int(round(32767 * math.sin(math.radians(phase))))
 
 if (__name__ == '__main__'):
     main()
