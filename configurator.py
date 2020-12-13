@@ -28,7 +28,7 @@ def main():
 
     # mode: 0 = output individual waveform from one LO
     #       1 = output superimposed waveforms from all LOs
-    mode = 0
+    mode = 1
     
     # phaseSource : 0 = PC sets the phase source
     #               1 = HVI sets the phase source
@@ -36,12 +36,12 @@ def main():
     
     #Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10E6
-    lo1_1_1 = 20E6
+    lo1_1_1 = 30E6
     lo1_1_2 = 50E6
     lo1_1_3 = 70E6
     
-    lophase1_1_0 = 90
-    lophase4_1_0 = 90
+    lophase1_1_0 = 0
+    lophase4_1_0 = 0
     
     control = mode + (phaseSource << 1)
     
@@ -51,8 +51,8 @@ def main():
     pcFpgaRegisters1 = [Register('PC_CH1_Control', control),
                       Register('PC_CH1_Q0', Q(lophase1_1_0)),
                       Register('PC_CH1_I0', I(lophase1_1_0)),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_1)),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_1)),
+                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
+                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
                       Register('PC_CH1_Q1', Q(lophase1_1_0)),
                       Register('PC_CH1_I1', I(lophase1_1_0)),
                       Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
