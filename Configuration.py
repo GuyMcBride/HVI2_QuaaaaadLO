@@ -98,6 +98,11 @@ class DigDescriptor(ModuleDescriptor):
     handle : int = 0
     
 @dataclass
+class HviRegister:
+    name : str = ''
+    value : int = 0
+
+@dataclass
 class HviConstant:
     name : str = ''
     value : int = 0
@@ -106,6 +111,7 @@ class HviConstant:
 class Hvi:
     triggers : [int]
     modules : [ModuleDescriptor]
+    registers : [HviRegister] = field(default_factory=list)
     constants : [HviConstant] = field(default_factory=list)
 
 @dataclass

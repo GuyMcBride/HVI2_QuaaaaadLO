@@ -12,7 +12,8 @@ import math
 
 from Configuration import (Config, loadConfig, 
                            AwgDescriptor, DigDescriptor,
-                           Hvi, HviConstant, Fpga, Register,
+                           Hvi, HviConstant, HviRegister,
+                           Fpga, Register,
                            PulseDescriptor, SubPulseDescriptor, 
                            Queue, QueueItem, 
                            DaqDescriptor)
@@ -22,6 +23,10 @@ log = logging.getLogger(__name__)
 def main():
     # repeats: Number of triggers to generate
     repeats = 10
+    
+    # resetPhases:  0 = Only reset phase at initialization
+    #               1 = Reset Phase each time around repeat loop
+    resetPhase = 0
     
     # pulseGap: Gap between pulses
     pulseGap = 200E-6
@@ -48,41 +53,63 @@ def main():
     # Register:
     #   #1 - name of register
     #   #2 - value to be written
-    pcFpgaRegisters1 = [Register('PC_CH1_Control', control),
-                      Register('PC_CH1_Q0', Q(lophase1_1_0)),
-                      Register('PC_CH1_I0', I(lophase1_1_0)),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
-                      Register('PC_CH1_Q1', Q(lophase1_1_0)),
-                      Register('PC_CH1_I1', I(lophase1_1_0)),
-                      Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
-                      Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
-                      Register('PC_CH1_Q2', Q(lophase1_1_0)),
-                      Register('PC_CH1_I2', I(lophase1_1_0)),
-                      Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
-                      Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
-                      Register('PC_CH1_Q3', Q(lophase1_1_0)),
-                      Register('PC_CH1_I3', I(lophase1_1_0)),
-                      Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
-                      Register('PC_CH1_PhaseInc3B', B(lo1_1_3))]
+    pcFpgaRegisters1 = [
+        Register('PC_CH1_Control', control),
+        Register('PC_CH1_Q0', Q(lophase1_1_0)),
+        Register('PC_CH1_I0', I(lophase1_1_0)),
+        Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
+        Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
+        Register('PC_CH1_Q1', Q(lophase1_1_0)),
+        Register('PC_CH1_I1', I(lophase1_1_0)),
+        Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
+        Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
+        Register('PC_CH1_Q2', Q(lophase1_1_0)),
+        Register('PC_CH1_I2', I(lophase1_1_0)),
+        Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
+        Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
+        Register('PC_CH1_Q3', Q(lophase1_1_0)),
+        Register('PC_CH1_I3', I(lophase1_1_0)),
+        Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
+        Register('PC_CH1_PhaseInc3B', B(lo1_1_3)),
+        
+        Register('PC_CH4_Control', control),
+        Register('PC_CH4_Q0', Q(lophase1_1_0)),
+        Register('PC_CH4_I0', I(lophase1_1_0)),
+        Register('PC_CH4_PhaseInc0A', A(lo1_1_0)),
+        Register('PC_CH4_PhaseInc0A', A(lo1_1_0)),
+        Register('PC_CH4_Q1', Q(lophase1_1_0)),
+        Register('PC_CH4_I1', I(lophase1_1_0)),
+        Register('PC_CH4_PhaseInc1A', A(lo1_1_1)),
+        Register('PC_CH4_PhaseInc1B', B(lo1_1_1)),
+        Register('PC_CH4_Q2', Q(lophase1_1_0)),
+        Register('PC_CH4_I2', I(lophase1_1_0)),
+        Register('PC_CH4_PhaseInc2A', A(lo1_1_2)),
+        Register('PC_CH4_PhaseInc2B', B(lo1_1_2)),
+        Register('PC_CH4_Q3', Q(lophase1_1_0)),
+        Register('PC_CH4_I3', I(lophase1_1_0)),
+        Register('PC_CH4_PhaseInc3A', A(lo1_1_3)),
+        Register('PC_CH4_PhaseInc3B', B(lo1_1_3))
+        ]
     
-    pcFpgaRegisters2 = [Register('PC_CH1_Control', control),
-                      Register('PC_CH1_Q0', Q(lophase4_1_0)),
-                      Register('PC_CH1_I0', I(lophase4_1_0)),
-                      Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
-                      Register('PC_CH1_PhaseInc0B', B(lo1_1_0)),
-                      Register('PC_CH1_Q1', Q(lophase4_1_0)),
-                      Register('PC_CH1_I1', I(lophase4_1_0)),
-                      Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
-                      Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
-                      Register('PC_CH1_Q2', Q(lophase4_1_0)),
-                      Register('PC_CH1_I2', I(lophase4_1_0)),
-                      Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
-                      Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
-                      Register('PC_CH1_Q3', Q(lophase4_1_0)),
-                      Register('PC_CH1_I3', I(lophase4_1_0)),
-                      Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
-                      Register('PC_CH1_PhaseInc3B', B(lo1_1_3))]
+    pcFpgaRegisters2 = [
+        Register('PC_CH1_Control', control),
+        Register('PC_CH1_Q0', Q(lophase4_1_0)),
+        Register('PC_CH1_I0', I(lophase4_1_0)),
+        Register('PC_CH1_PhaseInc0A', A(lo1_1_0)),
+        Register('PC_CH1_PhaseInc0B', B(lo1_1_0)),
+        Register('PC_CH1_Q1', Q(lophase4_1_0)),
+        Register('PC_CH1_I1', I(lophase4_1_0)),
+        Register('PC_CH1_PhaseInc1A', A(lo1_1_1)),
+        Register('PC_CH1_PhaseInc1B', B(lo1_1_1)),
+        Register('PC_CH1_Q2', Q(lophase4_1_0)),
+        Register('PC_CH1_I2', I(lophase4_1_0)),
+        Register('PC_CH1_PhaseInc2A', A(lo1_1_2)),
+        Register('PC_CH1_PhaseInc2B', B(lo1_1_2)),
+        Register('PC_CH1_Q3', Q(lophase4_1_0)),
+        Register('PC_CH1_I3', I(lophase4_1_0)),
+        Register('PC_CH1_PhaseInc3A', A(lo1_1_3)),
+        Register('PC_CH1_PhaseInc3B', B(lo1_1_3))
+        ]
     
     hviFpgaRegisters = [Register('RegisterBank_PhaseReset', 0)]
     
@@ -132,7 +159,7 @@ def main():
     #    #2 - IsCyclical 
     #    #3 - List of QueueItem details (waveforms)
     queue1 = Queue(1, True, [QueueItem(1, True, 0, 1)])
-    queue2 = Queue(4, True, [QueueItem(2, True, 0, 1)])
+    queue4 = Queue(4, True, [QueueItem(1, True, 0, 1)])
 
     # DaqDescriptor:
     #    #1 - Channel
@@ -147,12 +174,11 @@ def main():
     #    #4 - Slot Number, in which the module is installed
     #    #5 - FPGA details
     #    #6 - List of HVI registers to use
-    #    #7 - List of LoDescriptor details
-    #    #8 - List of PulseDescriptor details
-    #    #9 - List of queues (up to number of channels)
+    #    #7 - List of PulseDescriptor details
+    #    #8 - List of queues (up to number of channels)
     awg1 = AwgDescriptor("M3202A", 4, 1E09, 2, fpga1,
                          [pulseDescriptor1, pulseDescriptor2], 
-                         [queue1, queue2])
+                         [queue1, queue4])
 
     awg2 = AwgDescriptor("M3202A", 4, 1E09, 4, fpga2,
                          [pulseDescriptor1], 
@@ -170,17 +196,27 @@ def main():
 
     modules = [awg1, awg2, dig]
     
-    # HviConstant:
+    # HviRegisters: Controls the registers implemeted inside the HVI
     #   #1 - name
     #   #2 - value
-    hviConstants = [HviConstant('NumberOfLoops', repeats),
-                    HviConstant('Gap', int(pulseGap / 1E-9))]
+    hviRegisters = [
+        HviRegister('NumberOfLoops', repeats),
+        HviRegister('Gap', int(pulseGap / 1E-9))
+        ]
+    
+    # HviConstants: Controls things used to set up the HVI
+    #   #1 - name
+    #   #2 - value
+    hviConstants = [
+        HviConstant('ResetPhase', resetPhase)
+        ]
     
     # HVI:
     #    #1 - PXI Trigger Lines to use
     #    #2 - List of Modules to include in HVI
+    #    #3 - List of registers
     #    #3 - List of constants
-    hvi = Hvi([5, 6, 7], modules, hviConstants)
+    hvi = Hvi([5, 6, 7], modules, hviRegisters, hviConstants)
     
     # Config:
     #   #1 - List of Module details
