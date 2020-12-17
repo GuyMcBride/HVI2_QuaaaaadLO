@@ -32,6 +32,21 @@ def close():
     _hvi.release_hw()
 
 
+def _declareHviRegisters(config, sequencer):
+# TODO: Fix this when HVI iteration issue fixed 
+    log.info("Declaring HVI registers...")
+    engines = sequencer.sync_sequence.engines
+    scopes = sequencer.sync_sequence.scopes
+    for ii in range(len(scopes)):
+        for register in config.hvi.registers:
+            log.info("Adding register: {}, initial value: {} to module: {}".format(register.name,
+                                                                                   register.value,
+                                                                                   engines[ii].name))
+            registers = scopes[ii].registers
+            hviRegister = registers.add(register.name, kthvi.RegisterSize.SHORT)
+            hviRegister.initial_value = register.value
+        
+
 def _defineSystem(config):
     sys_def = kthvi.SystemDefinition("QuadLoSystemDefinition")
     
@@ -86,28 +101,30 @@ def _defineSequences(config, hviSystem):
             log.info("...Sequence for: {}".format(hviSystem.engines[ii].name))
             _Sequences.resetPhase(reset_block.sequences[hviSystem.engines[ii].name])
 
-    sync_block = sequencer.sync_sequence.add_sync_multi_sequence_block("TriggerBlock", 10)
+#    # Configure Sync While Condition
+    whileRegister = sequencer.sync_sequence.scopes[0].registers['NumberOfLoops']    
+    log.info("Creating Synchronized While loop, count = {}...".format(whileRegister.initial_value))
+    sync_while_condition = kthvi.Condition.register_comparison(
+        whileRegister,
+        kthvi.ComparisonOperator.GREATER_THAN, 
+        0
+        )
+    sync_while = sequencer.sync_sequence.add_sync_while("sync_while", 70, sync_while_condition)
+    sync_block = sync_while.sync_sequence.add_sync_multi_sequence_block("exec_block",170)
 # TODO: Fix this when HVI iteration issue fixed 
     log.info("Creating Sequences for Triggering Loop Block...")
     for ii in range(len(hviSystem.engines)):
-        log.info("...Sequence for: {}".format(hviSystem.engines[ii].name))
+        log.info("...Trigger sequence for: {}".format(hviSystem.engines[ii].name))
         _Sequences.triggerLoop(sync_block.sequences[hviSystem.engines[ii].name])
+        reset_phase = False
+        for constant in config.hvi.constants:
+            if (constant.name == 'ResetPhase') & (constant.value == 1):
+                reset_phase = True
+        if reset_phase & ('M32' in hviSystem.engines[ii].name):
+            log.info("...PhaseReset sequence for: {}".format(hviSystem.engines[ii].name))
+            _Sequences.resetPhase(sync_block.sequences[hviSystem.engines[ii].name])
     return(sequencer)
 
-def _declareHviRegisters(config, sequencer):
-# TODO: Fix this when HVI iteration issue fixed 
-    log.info("Declaring HVI registers...")
-    engines = sequencer.sync_sequence.engines
-    scopes = sequencer.sync_sequence.scopes
-    for ii in range(len(scopes)):
-        for constant in config.hvi.constants:
-            log.info("Adding register: {}, initial value: {} to module: {}".format(constant.name,
-                                                                                   constant.value,
-                                                                                   engines[ii].name))
-            registers = scopes[ii].registers
-            register = registers.add(constant.name, kthvi.RegisterSize.SHORT)
-            register.initial_value = constant.value
-        
 
 class _Sequences:
     def resetPhase(sequence):
@@ -131,14 +148,11 @@ class _Sequences:
     
     def triggerLoop(sequence):
         loopDelay = sequence.scope.registers['Gap'].initial_value
-        whileSequence = _Statements.whileLoop(sequence, 
-                                              "Loop Triggers",
-                                              sequence.scope.registers['NumberOfLoops'])
-        _Statements.triggerAll(whileSequence, "Trigger All Channels")
-        _Statements.decrementRegister(whileSequence, 
+        _Statements.triggerAll(sequence, "Trigger All Channels")
+        _Statements.decrementRegister(sequence, 
                                          "Decrement Loop Counter", 
                                          sequence.scope.registers['NumberOfLoops'])
-        whileSequence.add_delay("Counter Settle Time", loopDelay)
+        sequence.add_delay("Counter Settle Time", loopDelay)
     
 class _Statements:
     def whileLoop(sequence, name, loopCounter):
