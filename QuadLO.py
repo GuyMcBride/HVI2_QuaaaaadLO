@@ -45,6 +45,7 @@ def main():
     closeModules()
     log.info("Plotting Results...")
     plotWaves(digData, sampleRate, "Captured Waveforms")
+    plt.show()
 
 
 def plotWaves(waves, sampleRate, title):
@@ -59,7 +60,6 @@ def plotWaves(waves, sampleRate, title):
                 timebase = timebase / sampleRate
                 plt.plot(timebase, wave)
     plt.suptitle(title)
-    plt.show()
 
 def configureModules():    
     chassis = key.SD_Module.getChassisByIndex(1)
