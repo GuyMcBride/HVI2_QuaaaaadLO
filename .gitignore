@@ -2,4 +2,4 @@ __pycache__/
 config_hist/
 *.log
 *.yaml
-venv/
+.vscode
