@@ -5,19 +5,19 @@ Created on Fri Nov  6 16:45:52 2020
 @author: gumcbrid
 """
 
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import time
-import sys
 import logging
+import os
+import sys
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.append(r"C:\Program Files (x86)\Keysight\SD1\Libraries\Python")
 import keysightSD1 as key
 
-import pulses as pulseLab
-
 import Configuration
+import pulses as pulseLab
 import QuadLoHvi
 
 log = logging.getLogger(__name__)
@@ -324,9 +324,9 @@ def configureDig(chassis, module):
 
 def getDigDataRaw(module):
     TIMEOUT = 1000
-    daqData = []
+    daqData = np.array(module.daqs.count)
     for daq in module.daqs:
-        channelData = []
+        channelData = np.array(daq.captureCount)
         for capture in range(daq.captureCount):
             pointsPerCycle = int(np.round(daq.captureTime * module.sample_rate))
             dataRead = module.handle.DAQread(daq.channel, pointsPerCycle, TIMEOUT)
@@ -337,8 +337,8 @@ def getDigDataRaw(module):
                         module.slot, pointsPerCycle, len(dataRead)
                     )
                 )
-            channelData.append(dataRead)
-        daqData.append(channelData)
+            channelData[capture] = dataRead
+        daqData[daq] = channelData
     return daqData
 
 
