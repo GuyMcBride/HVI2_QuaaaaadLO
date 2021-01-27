@@ -324,9 +324,9 @@ def configureDig(chassis, module):
 
 def getDigDataRaw(module):
     TIMEOUT = 1000
-    daqData = np.array(module.daqs.count)
+    daqData = []
     for daq in module.daqs:
-        channelData = np.array(daq.captureCount)
+        channelData = []
         for capture in range(daq.captureCount):
             pointsPerCycle = int(np.round(daq.captureTime * module.sample_rate))
             dataRead = module.handle.DAQread(daq.channel, pointsPerCycle, TIMEOUT)
@@ -337,8 +337,9 @@ def getDigDataRaw(module):
                         module.slot, pointsPerCycle, len(dataRead)
                     )
                 )
-            channelData[capture] = dataRead
-        daqData[daq] = channelData
+            if capture != 0:
+                channelData.append(dataRead)
+        daqData.append(channelData)
     return daqData
 
 
