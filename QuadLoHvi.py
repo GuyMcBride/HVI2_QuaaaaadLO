@@ -94,8 +94,7 @@ def _defineSequence(hviSystem):
 
     #    # Configure Sync While Condition
     whileRegister = sequencer.sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
-    whileLoops = [i.value for i in _config.hvi.constants if i.name == "NumberOfLoops"]
-    whileLoops = whileLoops[0]
+    whileLoops = _config.hvi.get_constant("NumberOfLoops")
     log.info("Creating Synchronized While loop, count...")
     sync_while_condition = kthvi.Condition.register_comparison(
         whileRegister, kthvi.ComparisonOperator.LESS_THAN, whileLoops
@@ -103,7 +102,11 @@ def _defineSequence(hviSystem):
     sync_while = sequencer.sync_sequence.add_sync_while(
         "sync_while", 70, sync_while_condition
     )
-    _MultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
+    if _config.hvi.get_constant("ResetPhase"):
+        _MultiSequenceBlocks.reset_phase(sync_while.sync_sequence, 260)
+        _MultiSequenceBlocks.trigger(sync_while.sync_sequence)
+    else:
+        _MultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
     return sequencer
 
 
@@ -135,7 +138,7 @@ class _MultiSequenceBlocks:
             The Lead AWG has its loop counter initialized.
             The Digitizers are unaffected.
         """
-        block = sync_sequence.add_sync_multi_sequence_block("InitializeBlock", delay)
+        block = sync_sequence.add_sync_multi_sequence_block("Initialize Block", delay)
         log.info("Creating Sequences for Initialization Block...")
         for engine in sync_sequence.engines:
             log.info(f"...Sequence for: {engine.name}")
@@ -148,13 +151,29 @@ class _MultiSequenceBlocks:
                 _Statements.setRegister(sequence, "LoopCounter", 0)
         return
 
+    def reset_phase(sync_sequence, delay=10):
+        """
+        The AWGs are have all their LOs phase reset.
+        The Digitizers are unaffected.
+        """
+        block = sync_sequence.add_sync_multi_sequence_block("Reset Phase Block", delay)
+        log.info("Creating Sequences for Initialization Block...")
+        for engine in sync_sequence.engines:
+            log.info(f"...Sequence for: {engine.name}")
+            sequence = block.sequences[engine.name]
+            if "AWG" in engine.name:
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b1111)
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+        return
+
     def trigger(sync_sequence, delay=10):
         """
         In this block all modules are triggered:
             All channels of the AWGs are triggered.
             All channels of the Digitizers are triggered.
         """
-        block = sync_sequence.add_sync_multi_sequence_block("TriggerBlock", delay)
+        block = sync_sequence.add_sync_multi_sequence_block("Trigger Block", delay)
         log.info("Creating Sequences for Trigger Block...")
         for engine in sync_sequence.engines:
             log.info(f"...Sequence for: {engine.name}")
@@ -162,23 +181,9 @@ class _MultiSequenceBlocks:
             _Statements.triggerAll(sequence)
             if "AWG_LEAD" in engine.name:
                 _Statements.incrementRegister(sequence, "LoopCounter")
-                gap = [i.value for i in _config.hvi.constants if i.name == "Gap"]
-                gap = gap[0]
+                gap = _config.hvi.get_constant("Gap")
                 sequence.add_delay("Gap delay", gap)
         return
-
-
-class _Sequences:
-    def triggerLoop(sequence):
-        _Statements.triggerAll(sequence, "Trigger All Channels")
-        if "M32" in sequence.engine.name:
-            _Statements.decrementRegister(
-                sequence,
-                "Decrement Loop Counter",
-                sequence.scope.registers["NumberOfLoops"],
-            )
-            loopDelay = sequence.scope.registers["Gap"].initial_value
-            sequence.add_delay("Gap Time", loopDelay)
 
 
 class _Statements:
