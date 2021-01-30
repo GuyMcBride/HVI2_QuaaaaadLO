@@ -45,6 +45,7 @@ def _defineSystem():
     sys_def.chassis.add_auto_detect()
 
     # Add PXI trigger resources that we plan to use
+    log.info("Adding PXIe triggers to the HVI environment...")
     pxiTriggers = []
     for trigger in _config.hvi.triggers:
         pxiTriggerName = "PXI_TRIGGER{}".format(trigger)
@@ -54,26 +55,26 @@ def _defineSystem():
 
     log.info("Adding modules to the HVI environment...")
     for module in _config.modules:
-        engine_name = module.name
-        sys_def.engines.add(module.handle.hvi.engines.main_engine, engine_name)
+        sys_def.engines.add(module.handle.hvi.engines.main_engine, module.name)
 
         # Register the AWG and DAQ trigger actions and create 'general' names
         # for these to help when they are actually used in instructions
-        log.info("Declaring actions used by: {}...".format(engine_name))
-        if module.model == "M3202A":
+        log.info(f"...Declaring actions used by: {module.name}...")
+        if "AWG" in module.name:
             triggerRoot = "awg"
-        elif module.model == "M3102A":
+        elif "DIG" in module.name:
             triggerRoot = "daq"
         channels = int(module.handle.getOptions("channels")[-1])
         for channel in range(1, channels + 1):
             actionName = "trigger{}".format(channel)
-            triggerName = "{}{}_trigger".format(triggerRoot, channel)
+            triggerName = f"{triggerRoot}{channel}_trigger"
             actionId = getattr(module.handle.hvi.actions, triggerName)
-            sys_def.engines[engine_name].actions.add(actionId, actionName)
+            sys_def.engines[module.name].actions.add(actionId, actionName)
 
         # Register the FPGA resources used by HVI (exposes the registers)
-        if module.model == "M3202A":
-            sys_def.engines[engine_name].fpga_sandboxes[0].load_from_k7z(
+        if "AWG" in module.name:
+            log.info(f"...Declaring FPGA Registers used by: {module.name}...")
+            sys_def.engines[module.name].fpga_sandboxes[0].load_from_k7z(
                 os.getcwd() + "\\" + module.fpga.image_file
             )
     return sys_def
@@ -90,22 +91,14 @@ def _defineSequence(hviSystem):
     _declareHviRegisters(sequencer.sync_sequence)
 
     # Reset the LOs and intialize any registers
-    _MultiSequenceBlocks.initialize(sequencer.sync_sequence, 30)
+    _SyncMultiSequenceBlocks.initialize(sequencer.sync_sequence, 30)
 
     # Create the while loop for triggering all modules a number of times
     # and, perhaps, reseting the AWG phase Reset each time.
-    whileRegister = sequencer.sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
-    whileLoops = _config.hvi.get_constant("NumberOfLoops")
-    log.info("Creating Synchronized While loop, count...")
-    sync_while_condition = kthvi.Condition.register_comparison(
-        whileRegister, kthvi.ComparisonOperator.LESS_THAN, whileLoops
-    )
-    sync_while = sequencer.sync_sequence.add_sync_while(
-        "sync_while", 70, sync_while_condition
-    )
+    sync_while = _SyncWhileBlocks.MainLoop(sequencer.sync_sequence)
     if _config.hvi.get_constant("ResetPhase"):
-        _MultiSequenceBlocks.reset_phase(sync_while.sync_sequence, 260)
-        _MultiSequenceBlocks.trigger(sync_while.sync_sequence)
+        _SyncMultiSequenceBlocks.reset_phase(sync_while.sync_sequence, 260)
+        _SyncMultiSequenceBlocks.trigger(sync_while.sync_sequence)
     else:
         _MultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
     return sequencer
@@ -117,7 +110,7 @@ def _declareHviRegisters(sync_sequence):
     for module in _config.modules:
         for register in module.hvi_registers:
             log.info(
-                f"Adding register: {register.name}, "
+                f"...Adding register: {register.name}, "
                 f"initial value: {register.value} to module: {module.name}"
             )
             registers = scopes[module.name].registers
@@ -125,7 +118,21 @@ def _declareHviRegisters(sync_sequence):
             hviRegister.initial_value = register.value
 
 
-class _MultiSequenceBlocks:
+class _SyncWhileBlocks:
+    def MainLoop(sync_sequence, delay=70):
+        whileRegister = sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
+        whileLoops = _config.hvi.get_constant("NumberOfLoops")
+        log.info("Creating Synchronized While loop, {whileLoops}...")
+        sync_while_condition = kthvi.Condition.register_comparison(
+            whileRegister, kthvi.ComparisonOperator.LESS_THAN, whileLoops
+        )
+        sync_while = sync_sequence.add_sync_while(
+            "sync_while", delay, sync_while_condition
+        )
+        return sync_while
+
+
+class _SyncMultiSequenceBlocks:
     """
     All sequences for all modules sit within MultiSequenceBlocks. These blocks ensure
     that all the sequences for all the modules have finished before the block exits.
@@ -158,7 +165,7 @@ class _MultiSequenceBlocks:
         The Digitizers are unaffected.
         """
         block = sync_sequence.add_sync_multi_sequence_block("Reset Phase Block", delay)
-        log.info("Creating Sequences for Initialization Block...")
+        log.info("Creating Sequences for Reset Phase Block...")
         for engine in sync_sequence.engines:
             log.info(f"...Sequence for: {engine.name}")
             sequence = block.sequences[engine.name]
@@ -185,6 +192,7 @@ class _MultiSequenceBlocks:
             if "AWG_LEAD" in engine.name:
                 _Statements.incrementRegister(sequence, "LoopCounter")
                 gap = _config.hvi.get_constant("Gap")
+                log.info(f"......Adding delay of {gap} ns")
                 sequence.add_delay("Gap delay", gap)
         return
 

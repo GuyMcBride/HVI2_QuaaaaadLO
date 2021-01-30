@@ -132,7 +132,7 @@ def closeModules():
         elif module.model == "M3102A":
             stopDig(module)
         if module.fpga.image_file != "":
-            log.info("Loading FPGA image: {}".format(module.fpga.vanilla_file))
+            log.info(f"Loading FPGA image: {module.fpga.vanilla_file}")
             error = module.handle.FPGAload(
                 os.getcwd() + "\\" + module.fpga.vanilla_file
             )
@@ -192,7 +192,7 @@ def loadWaves(module):
             title = "Waveform {} in module {}_{}".format(
                 pulseDescriptor.id, module.model, module.slot
             )
-            plotWaves(wavesGroup, module.sample_rate, title)
+            #            plotWaves(wavesGroup, module.sample_rate, title)
             wave = interweavePulses(waves)
         else:
             # not interleaved, so normal channel
