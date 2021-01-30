@@ -123,6 +123,9 @@ class Hvi:
     modules: [ModuleDescriptor]
     constants: [HviConstant] = field(default_factory=list)
 
+    def get_constant(self, constant):
+        return [i.value for i in self.constants if i.name == constant][0]
+
 
 @dataclass
 class Config:
