@@ -17,7 +17,6 @@ from Configuration import (
     DigDescriptor,
     Hvi,
     HviConstant,
-    HviRegister,
     Fpga,
     Register,
     PulseDescriptor,
@@ -140,6 +139,11 @@ def main():
         hviFpgaRegisters,
     )
 
+    # HviRegisters: Controls the registers implemeted inside the HVI
+    #   #1 - name
+    #   #2 - value
+    hviRegisters = [Register("LoopCounter", 0)]
+
     # SubPulseDescriptor:
     #    #1 - carrier frequency inside envelope (generally 0 if using LO)
     #    #2 - Pulse width
@@ -183,57 +187,59 @@ def main():
     daq1 = DaqDescriptor(1, 100e-06, repeats, True)
 
     # AwgDescriptor:
-    #    #1 - Model Number
-    #    #2 - Number of channels
-    #    #3 - Sample Rate of module
-    #    #4 - Slot Number, in which the module is installed
-    #    #5 - FPGA details
-    #    #6 - List of HVI registers to use
-    #    #7 - List of PulseDescriptor details
-    #    #8 - List of queues (up to number of channels)
+    #    #1 - Name
+    #    #2 - Model Number
+    #    #3 - Number of channels
+    #    #4 - Sample Rate of module
+    #    #5 - Slot Number, in which the module is installed
+    #    #6 - FPGA details
+    #    #7 - List of HVI registers to use
+    #    #8 - List of PulseDescriptor details
+    #    #9 - List of queues (up to number of channels)
     awg1 = AwgDescriptor(
+        "AWG_LEAD",
         "M3202A",
         4,
         1e09,
         2,
         fpga1,
+        hviRegisters,
         [pulseDescriptor1, pulseDescriptor2],
         [queue1, queue4],
     )
 
-    awg2 = AwgDescriptor("M3202A", 4, 1e09, 4, fpga2, [pulseDescriptor1], [queue1])
+    awg2 = AwgDescriptor(
+        "AWG_FOLLOW_0", "M3202A", 4, 1e09, 4, fpga2, [], [pulseDescriptor1], [queue1]
+    )
 
     # DigDescriptor:
-    #    #1 - Model Number
-    #    #2 - Number of channels
-    #    #3 - Sample Rate of module
-    #    #4 - Slot Number, in which the module is installed
-    #    #5 - FPGA details
-    #    #6 - List of HVI registers to use
-    #    #7 - List of DaqDescriptor details
-    dig = DigDescriptor("M3102A", 4, 500e06, 7, Fpga(), [daq1])
+    #    #1 - Name
+    #    #2 - Model Number
+    #    #3 - Number of channels
+    #    #4 - Sample Rate of module
+    #    #5 - Slot Number, in which the module is installed
+    #    #6 - FPGA details
+    #    #7 - List of HVI registers used
+    #    #8 - List of DaqDescriptor details
+    dig = DigDescriptor("DIG_0", "M3102A", 4, 500e06, 7, Fpga(), [], [daq1])
 
     modules = [awg1, awg2, dig]
-
-    # HviRegisters: Controls the registers implemeted inside the HVI
-    #   #1 - name
-    #   #2 - value
-    hviRegisters = [
-        HviRegister("NumberOfLoops", repeats),
-        HviRegister("Gap", int(pulseGap / 1e-9)),
-    ]
 
     # HviConstants: Controls things used to set up the HVI
     #   #1 - name
     #   #2 - value
-    hviConstants = [HviConstant("ResetPhase", resetPhase)]
+    hviConstants = [
+        HviConstant("ResetPhase", resetPhase),
+        HviConstant("NumberOfLoops", repeats),
+        HviConstant("Gap", int(pulseGap / 1e-9)),
+    ]
 
     # HVI:
     #    #1 - PXI Trigger Lines to use
     #    #2 - List of Modules to include in HVI
     #    #3 - List of registers
     #    #3 - List of constants
-    hvi = Hvi([5, 6, 7], modules, hviRegisters, hviConstants)
+    hvi = Hvi([5, 6, 7], modules, hviConstants)
 
     # Config:
     #   #1 - List of Module details
