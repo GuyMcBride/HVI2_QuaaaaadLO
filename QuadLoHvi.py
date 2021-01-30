@@ -17,12 +17,14 @@ sys.path.append(
 import keysight_hvi as kthvi
 
 _hvi = None
+_config = None
 
 
 def configure(config):
-    global _hvi
-    hviSystem = _defineSystem(config)
-    sequencer = _defineSequences(config, hviSystem)
+    global _hvi, _config
+    _config = config
+    hviSystem = _defineSystem()
+    sequencer = _defineSequence(hviSystem)
     log.info("Compiling HVI...")
     _hvi = sequencer.compile()
     log.info("Loading HVI to HW...")
@@ -36,24 +38,7 @@ def close():
     _hvi.release_hw()
 
 
-def _declareHviRegisters(config, sequencer):
-    # TODO: Fix this when HVI iteration issue fixed
-    log.info("Declaring HVI registers...")
-    engines = sequencer.sync_sequence.engines
-    scopes = sequencer.sync_sequence.scopes
-    for ii in range(len(scopes)):
-        for register in config.hvi.registers:
-            log.info(
-                "Adding register: {}, initial value: {} to module: {}".format(
-                    register.name, register.value, engines[ii].name
-                )
-            )
-            registers = scopes[ii].registers
-            hviRegister = registers.add(register.name, kthvi.RegisterSize.SHORT)
-            hviRegister.initial_value = register.value
-
-
-def _defineSystem(config):
+def _defineSystem():
     sys_def = kthvi.SystemDefinition("QuadLoSystemDefinition")
 
     # Add Chassis resources to HVI System Definition
@@ -61,15 +46,15 @@ def _defineSystem(config):
 
     # Add PXI trigger resources that we plan to use
     pxiTriggers = []
-    for trigger in config.hvi.triggers:
+    for trigger in _config.hvi.triggers:
         pxiTriggerName = "PXI_TRIGGER{}".format(trigger)
         pxiTrigger = getattr(kthvi.TriggerResourceId, pxiTriggerName)
         pxiTriggers.append(pxiTrigger)
     sys_def.sync_resources = pxiTriggers
 
     log.info("Adding modules to the HVI environment...")
-    for module in config.modules:
-        engine_name = "{}_{}".format(module.model, module.slot)
+    for module in _config.modules:
+        engine_name = module.name
         sys_def.engines.add(module.handle.hvi.engines.main_engine, engine_name)
 
         # Register the AWG and DAQ trigger actions and create 'general' names
@@ -94,100 +79,96 @@ def _defineSystem(config):
     return sys_def
 
 
-def _defineSequences(config, hviSystem):
+def _defineSequence(hviSystem):
+    """
+    Defines the one and only synchronous sequencer for this HVI.
+    This will contain a bunch MultiSequence Blocks each containing sequences
+    for individual modules.
+    """
     log.info("Creating Main Sequencer Block...")
     sequencer = kthvi.Sequencer("QuadLoSequencer", hviSystem)
-    _declareHviRegisters(config, sequencer)
+    _declareHviRegisters(sequencer.sync_sequence)
 
     # Reset the LOs and intialize any registers
-    reset_block = sequencer.sync_sequence.add_sync_multi_sequence_block(
-        "InitializeBlock", 30
-    )
-    # TODO: Fix this when HVI iteration issue fixed
-    log.info("Creating Sequences for Initialization Block...")
-    for ii in range(len(hviSystem.engines)):
-        log.info("...Sequence for: {}".format(hviSystem.engines[ii].name))
-        _Sequences.resetPhase(reset_block.sequences[hviSystem.engines[ii].name])
+    _MultiSequenceBlocks.initialize(sequencer.sync_sequence, 30)
 
     #    # Configure Sync While Condition
-    whileRegister = sequencer.sync_sequence.scopes[0].registers["NumberOfLoops"]
-    log.info(
-        "Creating Synchronized While loop, count = {}...".format(
-            whileRegister.initial_value
-        )
-    )
+    whileRegister = sequencer.sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
+    whileLoops = [i.value for i in _config.hvi.constants if i.name == "NumberOfLoops"]
+    whileLoops = whileLoops[0]
+    log.info("Creating Synchronized While loop, count...")
     sync_while_condition = kthvi.Condition.register_comparison(
-        whileRegister, kthvi.ComparisonOperator.GREATER_THAN, 0
+        whileRegister, kthvi.ComparisonOperator.LESS_THAN, whileLoops
     )
     sync_while = sequencer.sync_sequence.add_sync_while(
         "sync_while", 70, sync_while_condition
     )
-    sync_block = sync_while.sync_sequence.add_sync_multi_sequence_block(
-        "exec_block", 260
-    )
-    # TODO: Fix this when HVI iteration issue fixed
-    log.info("Creating Sequences for Triggering Loop Block...")
-    for ii in range(len(hviSystem.engines)):
-        log.info("...Trigger sequence for: {}".format(hviSystem.engines[ii].name))
-        _Sequences.triggerLoop(sync_block.sequences[hviSystem.engines[ii].name])
-        reset_phase = False
-        for constant in config.hvi.constants:
-            if (constant.name == "ResetPhase") & (constant.value == 1):
-                reset_phase = True
-        if reset_phase:
-            log.info(
-                "...PhaseReset sequence for: {}".format(hviSystem.engines[ii].name)
-            )
-            _Sequences.resetPhase(sync_block.sequences[hviSystem.engines[ii].name])
+    _MultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
     return sequencer
 
 
-class _Sequences:
-    def resetPhase(sequence):
-        if "M32" in sequence.engine.name:
-            ch4PhaseReset_register = None
-            ch1PhaseReset_register = sequence.engine.fpga_sandboxes[0].fpga_registers[
-                "HVI_CH1_PhaseReset"
-            ]
-            try:
-                ch4PhaseReset_register = sequence.engine.fpga_sandboxes[
-                    0
-                ].fpga_registers["HVI_CH4_PhaseReset"]
-            except RuntimeError:
-                log.info("No CH4 registers detected")
-            if ch4PhaseReset_register == None:
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Pre Phase Reset", ch1PhaseReset_register, 0
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Phase Reset", ch1PhaseReset_register, 1
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Post Phase Reset", ch1PhaseReset_register, 0
-                )
-            else:
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Pre Phase Reset", ch1PhaseReset_register, 0
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH4 Pre Phase Reset", ch4PhaseReset_register, 0
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Phase Reset", ch1PhaseReset_register, 1
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH4 Phase Reset", ch4PhaseReset_register, 1
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH1 Post Phase Reset", ch1PhaseReset_register, 0
-                )
-                _Statements.writeFpgaRegister(
-                    sequence, "CH4 Post Phase Reset", ch4PhaseReset_register, 0
-                )
-            loopDelay = sequence.scope.registers["Gap"].initial_value
-            sequence.add_delay("Counter Settle Time", loopDelay)
-            return
+def _declareHviRegisters(sync_sequence):
+    log.info("Declaring HVI registers...")
+    scopes = sync_sequence.scopes
+    for module in _config.modules:
+        for register in module.hvi_registers:
+            log.info(
+                f"Adding register: {register.name}, "
+                f"initial value: {register.value} to module: {module.name}"
+            )
+            registers = scopes[module.name].registers
+            hviRegister = registers.add(register.name, kthvi.RegisterSize.SHORT)
+            hviRegister.initial_value = register.value
 
+
+class _MultiSequenceBlocks:
+    """
+    All sequences for all modules sit within MultiSequenceBlocks. These blocks ensure
+    that all the sequences for all the modules have finished before the block exits.
+    Thus all modules stay synchronized as they leave the block.
+    """
+
+    def initialize(sync_sequence, delay=10):
+        """
+        In this block all modules are initialized:
+            The AWGs are have all their LOs phase reset.
+            The Lead AWG has its loop counter initialized.
+            The Digitizers are unaffected.
+        """
+        block = sync_sequence.add_sync_multi_sequence_block("InitializeBlock", delay)
+        log.info("Creating Sequences for Initialization Block...")
+        for engine in sync_sequence.engines:
+            log.info(f"...Sequence for: {engine.name}")
+            sequence = block.sequences[engine.name]
+            if "AWG" in engine.name:
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b1111)
+                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+            if "AWG_LEAD" in engine.name:
+                _Statements.setRegister(sequence, "LoopCounter", 0)
+        return
+
+    def trigger(sync_sequence, delay=10):
+        """
+        In this block all modules are triggered:
+            All channels of the AWGs are triggered.
+            All channels of the Digitizers are triggered.
+        """
+        block = sync_sequence.add_sync_multi_sequence_block("TriggerBlock", delay)
+        log.info("Creating Sequences for Trigger Block...")
+        for engine in sync_sequence.engines:
+            log.info(f"...Sequence for: {engine.name}")
+            sequence = block.sequences[engine.name]
+            _Statements.triggerAll(sequence)
+            if "AWG_LEAD" in engine.name:
+                _Statements.incrementRegister(sequence, "LoopCounter")
+                gap = [i.value for i in _config.hvi.constants if i.name == "Gap"]
+                gap = gap[0]
+                sequence.add_delay("Gap delay", gap)
+        return
+
+
+class _Sequences:
     def triggerLoop(sequence):
         _Statements.triggerAll(sequence, "Trigger All Channels")
         if "M32" in sequence.engine.name:
@@ -209,8 +190,10 @@ class _Statements:
         whileLoop = sequence.add_while(name, 70, condition)
         return whileLoop.sequence
 
-    def triggerAll(sequence, name):
-        log.info("......TriggerAll")
+    def triggerAll(sequence):
+        inst_name = "TriggerAll"
+        statement_name = f"{inst_name}_{sequence.statements.count}"
+        log.info(f"......{inst_name}")
         actionCmd = sequence.instruction_set.action_execute
         actionParams = [
             sequence.engine.actions["trigger1"],
@@ -218,25 +201,52 @@ class _Statements:
             sequence.engine.actions["trigger3"],
             sequence.engine.actions["trigger4"],
         ]
-        instruction = sequence.add_instruction(name, 20, actionCmd.id)
+        instruction = sequence.add_instruction(statement_name, 20, actionCmd.id)
         instruction.set_parameter(actionCmd.action.id, actionParams)
 
-    def decrementRegister(sequence, name, counter, delay=10):
-        log.info("......Decrement Register: {}".format(counter.name))
+    def setRegister(sequence, name, value, delay=10):
+        inst_name = f"Set HVI register {name} to {value}"
+        register = sequence.scope.registers[name]
+        # instruction names must be unique, so use satement count as 'uniquifyer'
+        statement_name = f"{inst_name}_{sequence.statements.count}"
+        log.info(f"......{inst_name}")
         instruction = sequence.add_instruction(
-            name, delay, sequence.instruction_set.subtract.id
+            name, delay, sequence.instruction_set.assign.id
         )
         instruction.set_parameter(
-            sequence.instruction_set.subtract.destination.id, counter
+            sequence.instruction_set.assign.destination.id, register
         )
-        instruction.set_parameter(
-            sequence.instruction_set.subtract.left_operand.id, counter
-        )
-        instruction.set_parameter(sequence.instruction_set.subtract.right_operand.id, 1)
+        instruction.set_parameter(sequence.instruction_set.assign.source.id, 0)
 
-    def writeFpgaRegister(sequence, name, register, value):
-        log.info("......{}".format(name))
+    def incrementRegister(sequence, name, delay=10):
+        inst_name = f"Increment register {name}"
+        register = sequence.scope.registers[name]
+        # instruction names must be unique, so use satement count as 'uniquifyer'
+        statement_name = f"{inst_name}_{sequence.statements.count}"
+        log.info(f"......{inst_name}")
+        instruction = sequence.add_instruction(
+            statement_name, delay, sequence.instruction_set.add.id
+        )
+        instruction.set_parameter(sequence.instruction_set.add.destination.id, register)
+        instruction.set_parameter(
+            sequence.instruction_set.add.left_operand.id, register
+        )
+        instruction.set_parameter(sequence.instruction_set.add.right_operand.id, 1)
+
+    def writeFpgaRegister(sequence, name, value):
+        """
+        Writes <value> to module's FPGA register: <name>.
+
+        sequence : instance of modules sequencer within the HVI Sync Block
+        name : name of the HVI register
+        value : to be written to the register
+        """
+        inst_name = f"Set FPGA register {name} to {value}"
+        register = sequence.engine.fpga_sandboxes[0].fpga_registers[name]
+        # instruction names must be unique, so use satement count as 'uniquifyer'
+        statement_name = f"{inst_name}_{sequence.statements.count}"
+        log.info(f"......{inst_name}")
         regCmd = sequence.instruction_set.fpga_register_write
-        instruction = sequence.add_instruction(name, 10, regCmd.id)
+        instruction = sequence.add_instruction(statement_name, 10, regCmd.id)
         instruction.set_parameter(regCmd.fpga_register.id, register)
         instruction.set_parameter(regCmd.value.id, value)
