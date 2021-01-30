@@ -144,9 +144,9 @@ class _MultiSequenceBlocks:
             log.info(f"...Sequence for: {engine.name}")
             sequence = block.sequences[engine.name]
             if "AWG" in engine.name:
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b1111)
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b1111)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b0000)
             if "AWG_LEAD" in engine.name:
                 _Statements.setRegister(sequence, "LoopCounter", 0)
         return
@@ -162,9 +162,9 @@ class _MultiSequenceBlocks:
             log.info(f"...Sequence for: {engine.name}")
             sequence = block.sequences[engine.name]
             if "AWG" in engine.name:
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b1111)
-                _Statements.writeFpgaRegister(sequence, "HVI_CH1_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b0000)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b1111)
+                _Statements.writeFpgaRegister(sequence, "HVI_GLOBAL_PhaseReset", 0b0000)
         return
 
     def trigger(sync_sequence, delay=10):
