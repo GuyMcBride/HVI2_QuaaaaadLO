@@ -92,7 +92,8 @@ def _defineSequence(hviSystem):
     # Reset the LOs and intialize any registers
     _MultiSequenceBlocks.initialize(sequencer.sync_sequence, 30)
 
-    #    # Configure Sync While Condition
+    # Create the while loop for triggering all modules a number of times
+    # and, perhaps, reseting the AWG phase Reset each time.
     whileRegister = sequencer.sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
     whileLoops = _config.hvi.get_constant("NumberOfLoops")
     log.info("Creating Synchronized While loop, count...")
@@ -172,6 +173,8 @@ class _MultiSequenceBlocks:
         In this block all modules are triggered:
             All channels of the AWGs are triggered.
             All channels of the Digitizers are triggered.
+            The 'Lead AWG' decrements its loop counter and delays for a time
+             defined in 'Gap' constant.
         """
         block = sync_sequence.add_sync_multi_sequence_block("Trigger Block", delay)
         log.info("Creating Sequences for Trigger Block...")
@@ -187,13 +190,12 @@ class _MultiSequenceBlocks:
 
 
 class _Statements:
-    def whileLoop(sequence, name, loopCounter):
-        log.info("......While...")
-        condition = kthvi.Condition.register_comparison(
-            loopCounter, kthvi.ComparisonOperator.GREATER_THAN, 0
-        )
-        whileLoop = sequence.add_while(name, 70, condition)
-        return whileLoop.sequence
+    """
+    The syntax of adding instructions to the HVI sequence can be
+     verbose and cumbersome.
+    This class provides a more succinct way af adding these instructions
+     in the form of 'Statements'.
+    """
 
     def triggerAll(sequence):
         inst_name = "TriggerAll"
