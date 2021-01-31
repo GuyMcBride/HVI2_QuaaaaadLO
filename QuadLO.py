@@ -81,32 +81,31 @@ def configureModules():
 
 def _configureFpga(module):
     if module.fpga.image_file != "":
-        log.info("Loading FPGA image: {}".format(module.fpga.image_file))
+        log.info(f"Loading FPGA image: {module.fpga.image_file}")
         error = module.handle.FPGAload(os.getcwd() + "\\" + module.fpga.image_file)
         if error < 0:
             log.error(
-                "Loading FPGA bitfile: {} {}".format(
-                    error, key.SD_Error.getErrorMessage(error)
-                )
+                f"Loading FPGA bitfile: {error} "
+                f"{key.SD_Error.getErrorMessage(error)}"
             )
 
-    log.info("Writing {} FPGA registers".format(len(module.fpga.pc_registers)))
+    log.info(f"Writing {len(module.fpga.pc_registers)} FPGA registers")
     for register in module.fpga.pc_registers:
         sbReg = module.handle.FPGAgetSandBoxRegister(register.name)
         error = sbReg.writeRegisterInt32(register.value)
         if error < 0:
-            log.error("Error writing register: {}".format(register.name))
+            log.error(f"Error writing register: {register.name}")
 
 
 def configureAwg(chassis, module):
-    log.info("Configuring AWG in slot {}...".format(module.slot))
+    log.info(f"Configuring AWG in slot {module.slot}...")
     module.handle = key.SD_AOU()
     awg = module.handle
     error = awg.openWithSlotCompatibility(
         "", chassis, module.slot, key.SD_Compatibility.KEYSIGHT
     )
     if error < 0:
-        log.info("Error Opening - {}".format(error))
+        log.info(f"Error Opening - {error}")
     _configureFpga(module)
     # Clear all queues and waveforms
     awg.waveformFlush()
@@ -138,9 +137,8 @@ def closeModules():
             )
             if error < 0:
                 log.error(
-                    "Loading FPGA bitfile: {} {}".format(
-                        error, key.SD_Error.getErrorMessage(error)
-                    )
+                    f"Loading FPGA bitfile: {error} "
+                    f"{key.SD_Error.getErrorMessage(error)}"
                 )
         module.handle.close()
     log.info("Finished stopping and closing Modules")
@@ -151,15 +149,15 @@ def stopAwg(module):
     for channel in range(1, module.channels + 1):
         error = module.handle.AWGstop(channel)
         if error < 0:
-            log.info("Stopping AWG failed! - {}".format(error))
+            log.info(f"Stopping AWG failed! - {error}")
 
 
 def stopDig(module):
-    log.info("Stopping Digitizer in slot {}...".format(module.slot))
+    log.info(f"Stopping Digitizer in slot {module.slot}...")
     for channel in range(1, module.channels + 1):
         error = module.handle.DAQstop(channel)
         if error < 0:
-            log.info("Stopping Digitizer failed! - {}".format(error))
+            log.info(f"Stopping Digitizer failed! - {error}")
 
 
 def loadWaves(module):
@@ -189,8 +187,8 @@ def loadWaves(module):
                 subgroup.append([wave])
                 wavesGroup.append(subgroup)
             wavesGroup.append([waves])
-            title = "Waveform {} in module {}_{}".format(
-                pulseDescriptor.id, module.model, module.slot
+            title = (
+                f"Waveform {pulseDescriptor.id} in module {module.model}_{module.slot}"
             )
             #            plotWaves(wavesGroup, module.sample_rate, title)
             wave = interweavePulses(waves)
@@ -215,21 +213,13 @@ def loadWaves(module):
         error = waveform.newFromArrayDouble(key.SD_WaveformTypes.WAVE_ANALOG, wave)
         if error < 0:
             log.info(
-                "Error Creating Wave: {} {}".format(
-                    error, key.SD_Error.getErrorMessage(error)
-                )
+                f"Error Creating Wave: {error} {key.SD_Error.getErrorMessage(error)}"
             )
-        log.info(
-            "Loading waveform length: {} as ID: {} ".format(
-                len(wave), pulseDescriptor.id
-            )
-        )
+        log.info(f"Loading waveform length: {len(wave)} as ID: {pulseDescriptor.id}")
         error = module.handle.waveformLoad(waveform, pulseDescriptor.id)
         if error < 0:
             log.info(
-                "Error Loading Wave - {} {}".format(
-                    error, key.SD_Error.getErrorMessage(error)
-                )
+                f"Error Loading Wave - {error} {key.SD_Error.getErrorMessage(error)}"
             )
 
 
@@ -242,34 +232,32 @@ def enqueueWaves(module):
                 trigger = key.SD_TriggerModes.AUTOTRIG
             start_delay = item.start_time / 10e-09  # expressed in 10ns
             start_delay = int(np.round(start_delay))
-            log.info(
-                "Enqueueing: {} in channel {}".format(item.pulse_id, queue.channel)
-            )
+            log.info(f"Enqueueing: {item.pulse_id} in channel {queue.channel}")
             error = module.handle.AWGqueueWaveform(
                 queue.channel, item.pulse_id, trigger, start_delay, 1, 0
             )
             if error < 0:
-                log.info("Queueing waveform failed! - {}".format(error))
-        log.info("Setting queue 'Cyclic' to {}".format(queue.cyclic))
+                log.info(f"Queueing waveform failed! - {error}")
+        log.info(f"Setting queue 'Cyclic' to {queue.cyclic}")
         if queue.cyclic:
             queueMode = key.SD_QueueMode.CYCLIC
         else:
             queueMode = key.SD_QueueMode.ONE_SHOT
         error = module.handle.AWGqueueConfig(queue.channel, queueMode)
         if error < 0:
-            log.error("Configure cyclic mode failed! - {}".format(error))
+            log.error(f"Configure cyclic mode failed! - {error}")
 
         # This is only required for channels that implement the 'vanilla'
         # ModGain block. (It does no harm to other applications that do not).
         # It assumes that the source is to be directly from the AWG, rather
         # than function generator.
-        log.info("Setting Output Characteristics for channel {}".format(queue.channel))
+        log.info(f"Setting Output Characteristics for channel {queue.channel}")
         error = module.handle.channelWaveShape(queue.channel, key.SD_Waveshapes.AOU_AWG)
         if error < 0:
-            log.warn("Error Setting Waveshape - {}".format(error))
+            log.warn(f"Error Setting Waveshape - {error}")
         error = module.handle.channelAmplitude(queue.channel, 1.5)
         if error < 0:
-            log.warn("Error Setting Amplitude - {}".format(error))
+            log.warn(f"Error Setting Amplitude - {error}")
         module.handle.AWGstart(queue.channel)
 
 
@@ -281,16 +269,14 @@ def configureDig(chassis, module):
         "", chassis, module.slot, key.SD_Compatibility.KEYSIGHT
     )
     if error < 0:
-        log.info("Error Opening - {}".format(error))
+        log.info(f"Error Opening - {error}")
     _configureFpga(module)
     # Configure all channels to be DC coupled and 50 Ohm
     for channel in range(1, module.channels + 1):
         error = dig.DAQflush(channel)
         if error < 0:
             log.info("Error Flushing")
-        log.info(
-            "Configuring Digitizer in slot {}, Channel {}".format(module.slot, channel)
-        )
+        log.info(f"Configuring Digitizer in slot {module.slot}, Channel {channel}")
         error = dig.channelInputConfig(
             channel,
             2.0,
@@ -301,9 +287,7 @@ def configureDig(chassis, module):
             log.info("Error Configuring channel")
 
     for daq in module.daqs:
-        log.info(
-            "Configuring Acquisition parameters for channel {}".format(daq.channel)
-        )
+        log.info(f"Configuring Acquisition parameters for channel {daq.channel}")
         if daq.trigger:
             trigger_mode = key.SD_TriggerModes.SWHVITRIG
         else:
@@ -316,7 +300,7 @@ def configureDig(chassis, module):
         )
         if error < 0:
             log.info("Error Configuring Acquisition")
-        log.info("Starting DAQ, channel {}".format(daq.channel))
+        log.info(f"Starting DAQ, channel {daq.channel}")
         error = dig.DAQstart(daq.channel)
         if error < 0:
             log.info("Error Starting Digitizer")
@@ -332,10 +316,8 @@ def getDigDataRaw(module):
             dataRead = module.handle.DAQread(daq.channel, pointsPerCycle, TIMEOUT)
             if len(dataRead) != pointsPerCycle:
                 log.warning(
-                    "Slot:{} Attempted to Read {} samples, "
-                    "actually read {} samples".format(
-                        module.slot, pointsPerCycle, len(dataRead)
-                    )
+                    f"Slot:{module.slot} Attempted to Read {pointsPerCycle} samples, "
+                    f"actually read {len(dataRead)} samples"
                 )
             if capture != 0:
                 channelData.append(dataRead)

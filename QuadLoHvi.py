@@ -100,7 +100,7 @@ def _defineSequence(hviSystem):
         _SyncMultiSequenceBlocks.reset_phase(sync_while.sync_sequence, 260)
         _SyncMultiSequenceBlocks.trigger(sync_while.sync_sequence)
     else:
-        _MultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
+        _SyncMultiSequenceBlocks.trigger(sync_while.sync_sequence, 260)
     return sequencer
 
 
@@ -119,10 +119,18 @@ def _declareHviRegisters(sync_sequence):
 
 
 class _SyncWhileBlocks:
+    """
+    Provide HVI wide sychronized while loops. Each loop will have at leat one
+    SyncMultiSequenceBlock within it that holds sequences for all modules.
+    """
+
     def MainLoop(sync_sequence, delay=70):
+        """
+        The main loop, after initialization this loops 'NumberOfLoops" times.
+        """
         whileRegister = sync_sequence.scopes["AWG_LEAD"].registers["LoopCounter"]
         whileLoops = _config.hvi.get_constant("NumberOfLoops")
-        log.info("Creating Synchronized While loop, {whileLoops}...")
+        log.info(f"Creating Synchronized While loop, {whileLoops} iterations...")
         sync_while_condition = kthvi.Condition.register_comparison(
             whileRegister, kthvi.ComparisonOperator.LESS_THAN, whileLoops
         )
@@ -234,7 +242,7 @@ class _Statements:
         instruction.set_parameter(sequence.instruction_set.assign.source.id, 0)
 
     def incrementRegister(sequence, name, delay=10):
-        inst_name = f"Increment register {name}"
+        inst_name = f"Increment {name} register"
         register = sequence.scope.registers[name]
         # instruction names must be unique, so use satement count as 'uniquifyer'
         statement_name = f"{inst_name}_{sequence.statements.count}"
@@ -253,7 +261,7 @@ class _Statements:
         Writes <value> to module's FPGA register: <name>.
 
         sequence : instance of modules sequencer within the HVI Sync Block
-        name : name of the HVI register
+        name : name of the FPGA register
         value : to be written to the register
         """
         inst_name = f"Set FPGA register {name} to {value}"
