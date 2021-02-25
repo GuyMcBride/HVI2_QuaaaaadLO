@@ -356,6 +356,8 @@ def configure_hvi():
         )
     loop_count = config.hvi.get_constant("NumberOfLoops")
     gap = config.hvi.get_constant("Gap")
+    trigger_awgs = ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"]
+    trigger_daqs = ["daq1_trigger", "daq2_trigger", "daq3_trigger", "daq4_trigger"]
 
     """ Defines the complete HVI environment and HVI sequence"""
     # Create the main Sequencer and assign all the resources to be used
@@ -407,30 +409,17 @@ def configure_hvi():
     else:
         hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
     # AWG_LEAD Instructions
-    hvi.execute_actions(
-        "Trigger All",
-        "AWG_LEAD",
-        ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"],
-    )
+    hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
     hvi.incrementRegister("Increment loop counter", "AWG_LEAD", "LoopCounter")
     hvi.delay("Wait Gap time", "AWG_LEAD", gap)
     # AWG_FOLLOW_0 Instructions
-    hvi.execute_actions(
-        "Trigger All",
-        "AWG_FOLLOW_0",
-        ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"],
-    )
+    hvi.execute_actions("Trigger All", "AWG_FOLLOW_0", trigger_awgs)
     # DIG_0 Instructions
-    hvi.execute_actions(
-        "Trigger All",
-        "DIG_0",
-        ["daq1_trigger", "daq2_trigger", "daq3_trigger", "daq4_trigger"],
-    )
+    hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
     hvi.end_syncWhile
 
     log.info("SEQUENCER - CREATED")
     log.info(hvi.show_sequencer())
-
     return
 
 
