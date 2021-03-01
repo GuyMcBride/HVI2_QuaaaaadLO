@@ -9,6 +9,7 @@ import sys
 import os
 import logging
 from dataclasses import dataclass, field
+from collections import deque
 
 sys.path.append(
     r"C:/Program Files/Keysight/PathWave Test Sync Executive 2020 Update 1.0/api/python"
@@ -25,8 +26,8 @@ log = logging.getLogger(__name__)
 modules = None
 system_definition = None
 sequencer = None
-current_sync_sequence = None
-current_block = None
+current_sync_sequence = deque()
+current_block = deque()
 hvi_handle = None
 
 
@@ -40,6 +41,7 @@ class ModuleDescriptor:
     hvi_registers: [str] = field(default_factory=list)
     fpga: str = None
     handle: int = None
+    _current_sequence = None
 
 
 def define_system(name: str, **kwargs):
@@ -75,6 +77,7 @@ def define_system(name: str, **kwargs):
 
     log.info("Adding modules to the HVI environment...")
     for module in kwargs["modules"]:
+        module._current_sequence = deque()
         system_definition.engines.add(
             module.handle.hvi.engines.main_engine, module.name
         )
@@ -112,7 +115,7 @@ def define_system(name: str, **kwargs):
             )
     log.info("Creating Main Sequencer Block...")
     sequencer = kthvi.Sequencer(f"{name}_Sequencer", system_definition)
-    current_sync_sequence = sequencer.sync_sequence
+    current_sync_sequence.append(sequencer.sync_sequence)
 
     log.info("Declaring HVI registers...")
     scopes = sequencer.sync_sequence.scopes
@@ -151,6 +154,22 @@ def show_sequencer():
 # Helper Functions
 
 
+def _get_module(name):
+    return [i for i in modules if i.name == name][0]
+
+
+def _get_current_sequence(module_name):
+    return _get_module(module_name)._current_sequence[-1]
+
+
+def _push_current_sequence(module_name, sequence):
+    _get_module(module_name)._current_sequence.append(sequence)
+
+
+def _pop_current_sequence(module_name):
+    _get_module(module_name)._current_sequence.pop()
+
+
 def _statement_name(sequence, name):
     statement_names = [s.name for s in sequence.statements if s.name.startswith(name)]
     if len(statement_names) == 0:
@@ -176,6 +195,8 @@ def _sync_statement_name(sequence, name):
 
 def start_syncWhile_register(name, engine, register, comparison, value, delay=10):
     global current_sync_sequence
+    sequence = current_sync_sequence[-1]
+    statement_name = _sync_statement_name(sequence, name)
     whileRegister = sequencer.sync_sequence.scopes[engine].registers[register]
     comparison_operator = getattr(kthvi.ComparisonOperator, comparison)
 
@@ -183,31 +204,65 @@ def start_syncWhile_register(name, engine, register, comparison, value, delay=10
     condition = kthvi.Condition.register_comparison(
         whileRegister, comparison_operator, value
     )
-    while_sequence = sequencer.sync_sequence.add_sync_while(name, delay, condition)
-    current_sync_sequence = while_sequence.sync_sequence
+    while_sequence = sequencer.sync_sequence.add_sync_while(
+        statement_name, delay, condition
+    )
+    current_sync_sequence.append(while_sequence.sync_sequence)
     return
 
 
 def end_syncWhile():
     global current_sync_sequence
-    current_sync_sequence = sequencer.sync_sequence
+    current_sync_sequence.pop()
 
 
 def start_sync_multi_sequence_block(name, delay=10):
-    global current_block
-    statement_name = _sync_statement_name(current_sync_sequence, name)
-    current_block = current_sync_sequence.add_sync_multi_sequence_block(
-        statement_name, delay
-    )
+    global current_block, modules
+    sequence = current_sync_sequence[-1]
+    statement_name = _sync_statement_name(sequence, name)
+    block = sequence.add_sync_multi_sequence_block(statement_name, delay)
+    current_block.append(block)
+    for module in modules:
+        module._current_sequence.append(block.sequences[module.name])
     return
+
+
+def end_sync_multi_sequence_block():
+    global current_block
+    current_block.pop()
+    for module in modules:
+        module._current_sequence.pop()
 
 
 # Native HVI Sequence Instructions
 
 
+def if_register_comparison(name, module, register, comparison, value, delay=10):
+    """
+    Inserts an 'if' statement in the flow following instructions
+    are only executed if condition evalutes to True. This should be terminated
+    with
+    """
+    sequence = _get_current_sequence(module)
+    statement_name = _statement_name(sequence, name)
+    comparison_operator = getattr(kthvi.ComparisonOperator, comparison)
+    if_condition = kthvi.Condition.register_comparison(
+        register, comparison_operator, value
+    )
+    enable_matching_branches = True
+    if_statement = sequence.add_if(
+        statement_name, delay, if_condition, enable_matching_branches
+    )
+    _push_current_sequence(module, if_statement.if_branch.sequence)
+
+
+def end_if(module):
+    _pop_current_sequence(module)
+
+
 def set_register(name, module, register, value, delay=10):
     """Sets <register> in <module> to <value>"""
-    sequence = current_block.sequences[module]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     register_id = sequence.scope.registers[register]
     log.info(f"......{statement_name}")
@@ -222,7 +277,7 @@ def set_register(name, module, register, value, delay=10):
 
 def incrementRegister(name, module, register, delay=10):
     """Increments <register> in <module>"""
-    sequence = current_block.sequences[module]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     register_id = sequence.scope.registers[register]
     log.info(f"......{statement_name}")
@@ -242,7 +297,7 @@ def writeFpgaRegister(name, module, register, value, delay=10):
     register : name of the FPGA register
     value : to be written to the register
     """
-    sequence = current_block.sequences[module]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     register_id = sequence.engine.fpga_sandboxes[0].fpga_registers[register]
     log.info(f"......{statement_name}")
@@ -257,7 +312,7 @@ def execute_actions(name, module, actions, delay=10):
     Adds an instruction called <name> to sequence for <engine> to the current block
     to execute all <actions>
     """
-    sequence = current_block.sequences[module]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     log.info(f"......{statement_name}")
     actionCmd = sequence.instruction_set.action_execute
@@ -271,7 +326,7 @@ def delay(name, module, delay=10):
     Adds an instruction called <name> to sequence for <module> to the current block
     to delay for <delay> ns.
     """
-    sequence = current_block.sequences[module]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     log.info(f"......{statement_name}")
     sequence.add_delay(name, delay)
@@ -286,7 +341,7 @@ def awg_set_amplitude(name, module, channel, value, delay=10):
     of <channel> to <value>
     """
     module_name = module
-    sequence = current_block.sequences[module_name]
+    sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     log.info(f"......{name}")
     for module in modules:
@@ -323,6 +378,7 @@ if __name__ == "__main__":
     # The first block executes a single instruction
     start_sync_multi_sequence_block("Set Amplitudes", 30)
     awg_set_amplitude("Set Amplitude CH1", module.name, 1, 0.5)
+    end_sync_multi_sequence_block()
 
     # This sets up a while loop in which a block of two instructions
     # are repeated a number of times
@@ -336,11 +392,13 @@ if __name__ == "__main__":
         ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"],
     )
     awg_set_amplitude("Set Amplitude CH1", module.name, 1, 0.5)
+    end_sync_multi_sequence_block()
     end_syncWhile()
 
     # Finally a block executes a single instruction.
     start_sync_multi_sequence_block("Set Amplitudes", 100)
     awg_set_amplitude("Set Amplitude CH1", module.name, 1, 0.5)
+    end_sync_multi_sequence_block()
 
     log.info("")
     log.info("SEQUENCER - CREATED")
