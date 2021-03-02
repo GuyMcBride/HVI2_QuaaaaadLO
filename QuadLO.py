@@ -385,6 +385,7 @@ def configure_hvi():
     hvi.writeFpgaRegister(
         "deassert LO Phase Reset", "AWG_FOLLOW_0", "HVI_GLOBAL_PhaseReset", 0b0000
     )
+    hvi.end_sync_multi_sequence_block()
 
     hvi.start_syncWhile_register(
         "Main Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=70
@@ -405,8 +406,10 @@ def configure_hvi():
         hvi.writeFpgaRegister(
             "deassert LO Phase Reset", "AWG_FOLLOW_0", "HVI_GLOBAL_PhaseReset", 0b0000
         )
+        hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All")
     else:
+        hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
     # AWG_LEAD Instructions
     hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
@@ -416,6 +419,7 @@ def configure_hvi():
     hvi.execute_actions("Trigger All", "AWG_FOLLOW_0", trigger_awgs)
     # DIG_0 Instructions
     hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
+    hvi.end_sync_multi_sequence_block()
     hvi.end_syncWhile
 
     log.info("SEQUENCER - CREATED")
