@@ -178,6 +178,7 @@ def main():
     #    #2 - IsCyclical
     #    #3 - List of QueueItem details (waveforms)
     queue1 = Queue(1, True, [QueueItem(1, True, 0, 1)])
+    queue3 = Queue(3, True, [QueueItem(1, True, 0, 1)])
     queue4 = Queue(4, True, [QueueItem(1, True, 0, 1)])
 
     # DaqDescriptor:
@@ -205,7 +206,7 @@ def main():
         fpga1,
         hviRegisters,
         [pulseDescriptor1, pulseDescriptor2],
-        [queue1, queue4],
+        [queue1, queue3, queue4],
     )
 
     awg2 = AwgDescriptor(
