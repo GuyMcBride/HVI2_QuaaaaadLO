@@ -113,6 +113,17 @@ def configureAwg(chassis, module):
     awg.waveformFlush()
     for channel in range(module.channels):
         awg.AWGflush(channel + 1)
+        # This is only required for channels that implement the 'vanilla'
+        # ModGain block. (It does no harm to other applications that do not).
+        # It assumes that the source is to be directly from the AWG, rather
+        # than function generator.
+        log.info(f"Setting Output Characteristics for channel {channel}")
+        error = module.handle.channelWaveShape(channel, key.SD_Waveshapes.AOU_AWG)
+        if error < 0:
+            log.warn(f"Error Setting Waveshape - {error}")
+        error = module.handle.channelAmplitude(channel, 1.5)
+        if error < 0:
+            log.warn(f"Error Setting Amplitude - {error}")
     loadWaves(module)
     enqueueWaves(module)
     trigmask = 0
@@ -249,17 +260,6 @@ def enqueueWaves(module):
         if error < 0:
             log.error(f"Configure cyclic mode failed! - {error}")
 
-        # This is only required for channels that implement the 'vanilla'
-        # ModGain block. (It does no harm to other applications that do not).
-        # It assumes that the source is to be directly from the AWG, rather
-        # than function generator.
-        log.info(f"Setting Output Characteristics for channel {queue.channel}")
-        error = module.handle.channelWaveShape(queue.channel, key.SD_Waveshapes.AOU_AWG)
-        if error < 0:
-            log.warn(f"Error Setting Waveshape - {error}")
-        error = module.handle.channelAmplitude(queue.channel, 1.5)
-        if error < 0:
-            log.warn(f"Error Setting Amplitude - {error}")
         module.handle.AWGstart(queue.channel)
 
 
