@@ -277,6 +277,11 @@ def set_register(name, module, register, value, delay=10):
 
 def incrementRegister(name, module, register, delay=10):
     """Increments <register> in <module>"""
+    addToRegister(name, module, register, 1, delay)
+
+
+def addToRegister(name, module, register, value, delay=10):
+    """Adds <value> to <register> in <module>"""
     sequence = _get_current_sequence(module)
     statement_name = _statement_name(sequence, name)
     register_id = sequence.scope.registers[register]
@@ -286,7 +291,7 @@ def incrementRegister(name, module, register, delay=10):
     )
     instruction.set_parameter(sequence.instruction_set.add.destination.id, register_id)
     instruction.set_parameter(sequence.instruction_set.add.left_operand.id, register_id)
-    instruction.set_parameter(sequence.instruction_set.add.right_operand.id, 1)
+    instruction.set_parameter(sequence.instruction_set.add.right_operand.id, value)
 
 
 def writeFpgaRegister(name, module, register, value, delay=10):
