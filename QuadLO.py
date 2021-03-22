@@ -390,6 +390,9 @@ def configure_hvi():
     hvi.start_syncWhile_register(
         "Main Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=70
     )
+    hvi.start_syncWhile_register(
+        "Iteration Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=70
+    )
     if config.hvi.get_constant("ResetPhase"):
         hvi.start_sync_multi_sequence_block("Reset Phase", delay=260)
         # AWG_LEAD Instructions
@@ -409,7 +412,6 @@ def configure_hvi():
         hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All")
     else:
-        hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
     # AWG_LEAD Instructions
     hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
@@ -420,7 +422,12 @@ def configure_hvi():
     # DIG_0 Instructions
     hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
     hvi.end_sync_multi_sequence_block()
-    hvi.end_syncWhile
+    hvi.end_syncWhile #Iteration Loop
+    hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
+        #TODO Increment frequency register
+        #TODO clear the iteration loop counter
+    hvi.end_sync_multi_sequence_block()
+    hvi.end_syncWhile #Main Loop
 
     log.info("SEQUENCER - CREATED")
     log.info(hvi.show_sequencer())
