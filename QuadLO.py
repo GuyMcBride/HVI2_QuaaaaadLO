@@ -409,7 +409,6 @@ def configure_hvi():
         hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All")
     else:
-        hvi.end_sync_multi_sequence_block()
         hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
     # AWG_LEAD Instructions
     hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
