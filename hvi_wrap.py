@@ -193,7 +193,7 @@ def _sync_statement_name(sequence, name):
 # Syncronous Block Statements
 
 
-def start_syncWhile_register(name, engine, register, comparison, value, delay=10):
+def start_syncWhile_register(name, engine, register, comparison, value, delay=70):
     global current_sync_sequence
     sequence = current_sync_sequence[-1]
     statement_name = _sync_statement_name(sequence, name)
@@ -216,7 +216,7 @@ def end_syncWhile():
     current_sync_sequence.pop()
 
 
-def start_sync_multi_sequence_block(name, delay=10):
+def start_sync_multi_sequence_block(name, delay=30):
     global current_block, modules
     sequence = current_sync_sequence[-1]
     statement_name = _sync_statement_name(sequence, name)
