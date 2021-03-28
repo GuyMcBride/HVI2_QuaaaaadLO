@@ -113,6 +113,9 @@ def define_system(name: str, **kwargs):
             system_definition.engines[module.name].fpga_sandboxes[0].load_from_k7z(
                 os.getcwd() + "\\" + module.fpga
             )
+        for register in system_definition.engines[module.name].fpga_sandboxes[0].fpga_registers:
+            log.info(f"...... {register.name}")
+            
     log.info("Creating Main Sequencer Block...")
     sequencer = kthvi.Sequencer(f"{name}_Sequencer", system_definition)
     current_sync_sequence.append(sequencer.sync_sequence)
