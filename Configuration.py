@@ -61,6 +61,8 @@ class Fpga:
     pc_registers: [Register] = field(default_factory=list)
     hvi_registers: [Register] = field(default_factory=list)
 
+    def get_hvi_register_value(self, name):
+        return [i.value for i in self.hvi_registers if i.name == name][0]
 
 @dataclass
 class SubPulseDescriptor:
@@ -131,6 +133,9 @@ class Hvi:
 class Config:
     modules: [ModuleDescriptor]
     hvi: Hvi
+
+    def get_module(self, name):
+        return [i for i in self.modules if i.name == name][0]
 
 
 def loadConfig(configFile: str = "latest"):

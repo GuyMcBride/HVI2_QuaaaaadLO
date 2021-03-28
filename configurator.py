@@ -35,7 +35,7 @@ def main():
 
     # resetPhases:  0 = Only reset phase at initialization
     #               1 = Reset Phase each time around repeat loop
-    resetPhase = 0
+    resetPhase = 1
 
     # pulseGap: Gap between pulses
     pulseGap = 200e-6
@@ -48,6 +48,10 @@ def main():
     #               1 = HVI sets the phase source
     phaseSource = 0
 
+    # frequencySource : 0 = PC sets the frequency source
+    #               1 = HVI sets the frequency source
+    frequencySource = 1
+
     # Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10e6
     lo1_1_1 = 30e6
@@ -57,7 +61,7 @@ def main():
     lophase1_1_0 = 0
     lophase4_1_0 = 0
 
-    control = mode + (phaseSource << 1)
+    control = mode + (phaseSource << 1) + (frequencySource << 2)
 
     # Register:
     #   #1 - name of register
@@ -67,7 +71,7 @@ def main():
         Register("PC_CH1_Q0", Q(lophase1_1_0)),
         Register("PC_CH1_I0", I(lophase1_1_0)),
         Register("PC_CH1_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH1_PhaseInc0A", A(lo1_1_0)),
+        Register("PC_CH1_PhaseInc0B", B(lo1_1_0)),
         Register("PC_CH1_Q1", Q(lophase1_1_0)),
         Register("PC_CH1_I1", I(lophase1_1_0)),
         Register("PC_CH1_PhaseInc1A", A(lo1_1_1)),
@@ -80,11 +84,28 @@ def main():
         Register("PC_CH1_I3", I(lophase1_1_0)),
         Register("PC_CH1_PhaseInc3A", A(lo1_1_3)),
         Register("PC_CH1_PhaseInc3B", B(lo1_1_3)),
+        Register("PC_CH3_Control", control),
+        Register("PC_CH3_Q0", Q(lophase1_1_0)),
+        Register("PC_CH3_I0", I(lophase1_1_0)),
+        Register("PC_CH3_PhaseInc0A", A(lo1_1_0)),
+        Register("PC_CH3_PhaseInc0B", B(lo1_1_0)),
+        Register("PC_CH3_Q1", Q(lophase1_1_0)),
+        Register("PC_CH3_I1", I(lophase1_1_0)),
+        Register("PC_CH3_PhaseInc1A", A(lo1_1_1)),
+        Register("PC_CH3_PhaseInc1B", B(lo1_1_1)),
+        Register("PC_CH3_Q2", Q(lophase1_1_0)),
+        Register("PC_CH3_I2", I(lophase1_1_0)),
+        Register("PC_CH3_PhaseInc2A", A(lo1_1_2)),
+        Register("PC_CH3_PhaseInc2B", B(lo1_1_2)),
+        Register("PC_CH3_Q3", Q(lophase1_1_0)),
+        Register("PC_CH3_I3", I(lophase1_1_0)),
+        Register("PC_CH3_PhaseInc3A", A(lo1_1_3)),
+        Register("PC_CH3_PhaseInc3B", B(lo1_1_3)),
         Register("PC_CH4_Control", control),
         Register("PC_CH4_Q0", Q(lophase1_1_0)),
         Register("PC_CH4_I0", I(lophase1_1_0)),
         Register("PC_CH4_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH4_PhaseInc0A", A(lo1_1_0)),
+        Register("PC_CH4_PhaseInc0B", B(lo1_1_0)),
         Register("PC_CH4_Q1", Q(lophase1_1_0)),
         Register("PC_CH4_I1", I(lophase1_1_0)),
         Register("PC_CH4_PhaseInc1A", A(lo1_1_1)),
@@ -119,7 +140,13 @@ def main():
         Register("PC_CH1_PhaseInc3B", B(lo1_1_3)),
     ]
 
-    hviFpgaRegisters = [Register("RegisterBank_PhaseReset", 0)]
+    hviFpgaRegisters = [
+        Register("HVI_GLOBAL_PhaseReset", 0),
+        Register("HVI_CH1_PhaseInc0A", A(lo1_1_0)),
+        Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
+        Register("HVI_CH4_PhaseInc0A", A(lo1_1_0)),
+        Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
+    ]
 
     # Fpga:
     #   #1 - filename of bit image

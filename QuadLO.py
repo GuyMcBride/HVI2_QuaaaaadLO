@@ -91,8 +91,9 @@ def _configureFpga(module):
                 f"{key.SD_Error.getErrorMessage(error)}"
             )
 
-    log.info(f"Writing {len(module.fpga.pc_registers)} FPGA registers")
+    log.info(f"Writing {len(module.fpga.pc_registers)} FPGA registers...")
     for register in module.fpga.pc_registers:
+        log.info(f"...Writing {register.value} to {register.name}")
         sbReg = module.handle.FPGAgetSandBoxRegister(register.name)
         error = sbReg.writeRegisterInt32(register.value)
         if error < 0:
@@ -365,6 +366,26 @@ def configure_hvi():
 
     hvi.start_sync_multi_sequence_block("Initialize", delay=30)
     # AWG_LEAD Instructions
+    lo_freq_0A = config.get_module("AWG_LEAD").fpga.get_hvi_register_value("HVI_CH1_PhaseInc0A")
+    lo_freq_0B = config.get_module("AWG_LEAD").fpga.get_hvi_register_value("HVI_CH1_PhaseInc0B")
+    hvi.writeFpgaRegister(
+        "Set CH1 LO0A", "AWG_LEAD", "HVI_CH1_PhaseInc0A", lo_freq_0A
+    )
+    hvi.writeFpgaRegister(
+        "Set CH1 LO0B", "AWG_LEAD", "HVI_CH1_PhaseInc0B", lo_freq_0B
+    )
+
+    hvi.writeFpgaRegister(
+        "Set CH4 LO0A", "AWG_LEAD", "HVI_CH4_PhaseInc0A", lo_freq_0A
+    )
+    hvi.writeFpgaRegister(
+        "Set CH4 LO0B", "AWG_LEAD", "HVI_CH4_PhaseInc0B", lo_freq_0B
+    )
+
+    hvi.writeFpgaRegister(
+        "deassert LO Phase Reset", "AWG_LEAD", "HVI_GLOBAL_PhaseReset", 0b0000
+    )
+
     hvi.writeFpgaRegister(
         "deassert LO Phase Reset", "AWG_LEAD", "HVI_GLOBAL_PhaseReset", 0b0000
     )
