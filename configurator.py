@@ -50,7 +50,7 @@ def main():
 
     # frequencySource : 0 = PC sets the frequency source
     #               1 = HVI sets the frequency source
-    frequencySource = 0
+    frequencySource = 1
 
     # Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10e6
@@ -140,7 +140,13 @@ def main():
         Register("PC_CH1_PhaseInc3B", B(lo1_1_3)),
     ]
 
-    hviFpgaRegisters = [Register("RegisterBank_PhaseReset", 0)]
+    hviFpgaRegisters = [
+        Register("HVI_GLOBAL_PhaseReset", 0),
+        Register("HVI_CH1_PhaseInc0A", A(lo1_1_0)),
+        Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
+        Register("HVI_CH4_PhaseInc0A", A(lo1_1_0)),
+        Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
+    ]
 
     # Fpga:
     #   #1 - filename of bit image
