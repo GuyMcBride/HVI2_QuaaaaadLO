@@ -91,8 +91,9 @@ def _configureFpga(module):
                 f"{key.SD_Error.getErrorMessage(error)}"
             )
 
-    log.info(f"Writing {len(module.fpga.pc_registers)} FPGA registers")
+    log.info(f"Writing {len(module.fpga.pc_registers)} FPGA registers...")
     for register in module.fpga.pc_registers:
+        log.info(f"...Writing {register.value} to {register.name}")
         sbReg = module.handle.FPGAgetSandBoxRegister(register.name)
         error = sbReg.writeRegisterInt32(register.value)
         if error < 0:
