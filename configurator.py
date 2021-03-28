@@ -48,6 +48,10 @@ def main():
     #               1 = HVI sets the phase source
     phaseSource = 0
 
+    # frequencySource : 0 = PC sets the frequency source
+    #               1 = HVI sets the frequency source
+    frequencySource = 0
+
     # Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10e6
     lo1_1_1 = 30e6
@@ -57,7 +61,7 @@ def main():
     lophase1_1_0 = 0
     lophase4_1_0 = 0
 
-    control = mode + (phaseSource << 1)
+    control = mode + (phaseSource << 1) + (frequencySource << 2)
 
     # Register:
     #   #1 - name of register
