@@ -207,7 +207,7 @@ def start_syncWhile_register(name, engine, register, comparison, value, delay=70
     condition = kthvi.Condition.register_comparison(
         whileRegister, comparison_operator, value
     )
-    while_sequence = sequencer.sync_sequence.add_sync_while(
+    while_sequence = sequence.add_sync_while(
         statement_name, delay, condition
     )
     current_sync_sequence.append(while_sequence.sync_sequence)
@@ -217,6 +217,7 @@ def start_syncWhile_register(name, engine, register, comparison, value, delay=70
 def end_syncWhile():
     global current_sync_sequence
     current_sync_sequence.pop()
+    return
 
 
 def start_sync_multi_sequence_block(name, delay=30):
