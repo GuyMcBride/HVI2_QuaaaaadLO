@@ -356,6 +356,7 @@ def configure_hvi():
             )
         )
     loop_count = config.hvi.get_constant("NumberOfLoops")
+    iteration_count = config.hvi.get_constant("NumberOfIterations")
     gap = config.hvi.get_constant("Gap")
     trigger_awgs = ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"]
     trigger_daqs = ["daq1_trigger", "daq2_trigger", "daq3_trigger", "daq4_trigger"]
@@ -396,6 +397,7 @@ def configure_hvi():
         "deassert LO Phase Reset", "AWG_LEAD", "HVI_GLOBAL_PhaseReset", 0b0000
     )
     hvi.set_register("Clear Loop Counter", "AWG_LEAD", "LoopCounter", 0)
+    hvi.set_register("Clear Iteration Counter", "AWG_LEAD", "IterationCounter", 0)
     # AWG_FOLLOW_0 Instructions
     hvi.writeFpgaRegister(
         "deassert LO Phase Reset", "AWG_FOLLOW_0", "HVI_GLOBAL_PhaseReset", 0b0000
@@ -409,10 +411,10 @@ def configure_hvi():
     hvi.end_sync_multi_sequence_block()
 
     hvi.start_syncWhile_register(
-        "Main Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=70
+        "Main Loop", "AWG_LEAD", "IterationCounter", "LESS_THAN", iteration_count, delay=70
     )
     hvi.start_syncWhile_register(
-        "Iteration Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=70
+        "Iteration Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=570
     )
     if config.hvi.get_constant("ResetPhase"):
         hvi.start_sync_multi_sequence_block("Reset Phase", delay=260)
@@ -443,12 +445,13 @@ def configure_hvi():
     # DIG_0 Instructions
     hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
     hvi.end_sync_multi_sequence_block()
-    hvi.end_syncWhile #Iteration Loop
-    hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
-        #TODO Increment frequency register
-        #TODO clear the iteration loop counter
+    hvi.end_syncWhile() #Iteration Loop
+    hvi.start_sync_multi_sequence_block("Change Frequency", delay=260)
+    hvi.set_register("Clear Loop Counter", "AWG_LEAD", "LoopCounter", 0)
+    hvi.incrementRegister("Increment Iteration counter", "AWG_LEAD", "IterationCounter")
+    hvi.delay("Wait Gap time", "AWG_LEAD", 100)
     hvi.end_sync_multi_sequence_block()
-    hvi.end_syncWhile #Main Loop
+    hvi.end_syncWhile() #Main Loop
 
     log.info("SEQUENCER - CREATED")
     log.info(hvi.show_sequencer())

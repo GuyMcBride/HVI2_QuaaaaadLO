@@ -31,7 +31,10 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    repeats = 10
+    loops = 10
+
+    # repeats: Number of triggers to generate
+    iterations = 10
 
     # resetPhases:  0 = Only reset phase at initialization
     #               1 = Reset Phase each time around repeat loop
@@ -169,7 +172,10 @@ def main():
     # HviRegisters: Controls the registers implemeted inside the HVI
     #   #1 - name
     #   #2 - value
-    hviRegisters = [Register("LoopCounter", 0)]
+    hviRegisters = [
+        Register("LoopCounter", 0),
+        Register("IterationCounter", 0),
+    ]
 
     # SubPulseDescriptor:
     #    #1 - carrier frequency inside envelope (generally 0 if using LO)
@@ -212,7 +218,7 @@ def main():
     #    #1 - Channel
     #    #2 - Capture Period
     #    #3 - Trigger (False = auto, True = trigger from SW/HVI)
-    daq1 = DaqDescriptor(1, 100e-06, repeats, True)
+    daq1 = DaqDescriptor(1, 100e-06, loops * iterations, True)
 
     # AwgDescriptor:
     #    #1 - Name
@@ -258,7 +264,8 @@ def main():
     #   #2 - value
     hviConstants = [
         HviConstant("ResetPhase", resetPhase),
-        HviConstant("NumberOfLoops", repeats),
+        HviConstant("NumberOfLoops", loops),
+        HviConstant("NumberOfIterations", iterations),
         HviConstant("Gap", int(pulseGap / 1e-9)),
     ]
 
