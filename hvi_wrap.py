@@ -110,9 +110,16 @@ def define_system(name: str, **kwargs):
         # Register the FPGA resources used by HVI (exposes the registers)
         if module.fpga:
             log.info(f"...Declaring FPGA Registers used by: {module.name}...")
-            system_definition.engines[module.name].fpga_sandboxes[0].load_from_k7z(
-                os.getcwd() + "\\" + module.fpga
-            )
+            try:
+                system_definition.engines[module.name].fpga_sandboxes[0].load_from_k7z(
+                    os.getcwd() + "\\" + module.fpga
+                )
+            except Exception as err:
+                if err.args[0] == "No interface named 'MainEngine_Memory'":
+                    log.info("No HVI registers")
+                else:
+                    raise(err)
+ 
         for register in system_definition.engines[module.name].fpga_sandboxes[0].fpga_registers:
             log.info(f"...... {register.name}")
             
