@@ -9,6 +9,7 @@ import os
 import yaml
 import json
 from dataclasses import dataclass, field
+from typing import List
 import logging.config
 
 
@@ -45,7 +46,7 @@ class QueueItem:
 class Queue:
     channel: int
     cyclic: bool
-    items: [QueueItem]
+    items: List[QueueItem]
 
 
 @dataclass
@@ -58,8 +59,8 @@ class Register:
 class Fpga:
     image_file: str = ""
     vanilla_file: str = ""
-    pc_registers: [Register] = field(default_factory=list)
-    hvi_registers: [Register] = field(default_factory=list)
+    pc_registers: List[Register] = field(default_factory=list)
+    hvi_registers: List[Register] = field(default_factory=list)
 
     def get_hvi_register_value(self, name):
         return [i.value for i in self.hvi_registers if i.name == name][0]
@@ -77,7 +78,7 @@ class SubPulseDescriptor:
 class PulseDescriptor:
     id: int
     pri: float()
-    pulses: [SubPulseDescriptor] = field(default_factory=list)
+    pulses: List[SubPulseDescriptor] = field(default_factory=list)
 
 
 @dataclass
@@ -88,13 +89,13 @@ class ModuleDescriptor:
     sample_rate: float
     slot: int
     fpga: Fpga
-    hvi_registers: [Register]
+    hvi_registers: List[Register]
 
 
 @dataclass
 class AwgDescriptor(ModuleDescriptor):
-    pulseDescriptors: [PulseDescriptor]
-    queues: [Queue] = field(default_factory=list)
+    pulseDescriptors: List[PulseDescriptor]
+    queues: List[Queue] = field(default_factory=list)
     handle: int = 0
 
 
@@ -109,7 +110,7 @@ class DaqDescriptor:
 
 @dataclass
 class DigDescriptor(ModuleDescriptor):
-    daqs: [DaqDescriptor]
+    daqs: List[DaqDescriptor]
     handle: int = 0
 
 
@@ -121,9 +122,9 @@ class HviConstant:
 
 @dataclass
 class Hvi:
-    triggers: [int]
-    modules: [ModuleDescriptor]
-    constants: [HviConstant] = field(default_factory=list)
+    modules: List[ModuleDescriptor]
+    constants: List[HviConstant] = field(default_factory=list)
+    triggers: List[int] = None
 
     def get_constant(self, constant):
         return [i.value for i in self.constants if i.name == constant][0]
@@ -131,7 +132,7 @@ class Hvi:
 
 @dataclass
 class Config:
-    modules: [ModuleDescriptor]
+    modules: List[ModuleDescriptor]
     hvi: Hvi
 
     def get_module(self, name):
