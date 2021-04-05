@@ -122,6 +122,7 @@ class HviConstant:
 
 @dataclass
 class Hvi:
+    hviFile: str
     modules: List[ModuleDescriptor]
     constants: List[HviConstant] = field(default_factory=list)
     triggers: List[int] = None

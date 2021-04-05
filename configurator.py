@@ -270,10 +270,11 @@ def main():
     ]
 
     # HVI:
-    #    #1 - List of Modules to include in HVI
+    #    #1 - Python file that defines the HVI algorithm.
+    #    #2 - List of Modules to include in HVI
     #    #3 - List of constants
     #    #4 - PXI Trigger Lines to use (defaults to all, 0 indexed)
-    hvi = Hvi(modules, hviConstants)
+    hvi = Hvi("hvi_quad_lo", modules, hviConstants)
 
     # Config:
     #   #1 - List of Module details
