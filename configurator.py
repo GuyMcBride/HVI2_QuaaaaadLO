@@ -270,11 +270,10 @@ def main():
     ]
 
     # HVI:
-    #    #1 - PXI Trigger Lines to use
-    #    #2 - List of Modules to include in HVI
-    #    #3 - List of registers
+    #    #1 - List of Modules to include in HVI
     #    #3 - List of constants
-    hvi = Hvi([5, 6, 7], modules, hviConstants)
+    #    #4 - PXI Trigger Lines to use (defaults to all, 0 indexed)
+    hvi = Hvi(modules, hviConstants)
 
     # Config:
     #   #1 - List of Module details
