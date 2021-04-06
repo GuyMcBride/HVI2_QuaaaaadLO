@@ -31,10 +31,10 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    loops = 10
+    loops = 5
 
     # repeats: Number of triggers to generate
-    iterations = 10
+    iterations = 2
 
     # resetPhases:  0 = Only reset phase at initialization
     #               1 = Reset Phase each time around repeat loop
@@ -175,6 +175,7 @@ def main():
     hviRegisters = [
         Register("LoopCounter", 0),
         Register("IterationCounter", 0),
+        Register("FrequencyIterator", A(lo1_1_0)),
     ]
 
     # SubPulseDescriptor:
@@ -267,6 +268,7 @@ def main():
         HviConstant("NumberOfLoops", loops),
         HviConstant("NumberOfIterations", iterations),
         HviConstant("Gap", int(pulseGap / 1e-9)),
+        HviConstant("FrequencyIncrement", A(lo1_1_0)),
     ]
 
     # HVI:
