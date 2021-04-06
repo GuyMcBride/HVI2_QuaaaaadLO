@@ -320,7 +320,10 @@ def writeFpgaRegister(name, module, register, value, delay=10):
     reg_cmd = sequence.instruction_set.fpga_register_write
     instruction = sequence.add_instruction(statement_name, delay, reg_cmd.id)
     instruction.set_parameter(reg_cmd.fpga_register.id, register_id)
+    if type(value) is str:
+        value = sequence.scope.registers[value]
     instruction.set_parameter(reg_cmd.value.id, value)
+    return
 
 
 def execute_actions(name, module, actions, delay=10):
