@@ -38,7 +38,7 @@ def main():
     hvi.start()
 
     log.info("Waiting for stuff to happen...")
-    time.sleep(1)
+    hvi.check_status(config)
     digData = []
     for module in config.modules:
         if module.model == "M3102A":
@@ -308,6 +308,11 @@ def configureDig(chassis, module):
         error = dig.DAQstart(daq.channel)
         if error < 0:
             log.info("Error Starting Digitizer")
+    log.info(f"Special Configuring {daq.channel}")
+    try:
+        hvi.configure_digitizer(module)
+    except AttributeError:
+        log.info("No special configuration implemented")
 
 
 def getDigDataRaw(module):
