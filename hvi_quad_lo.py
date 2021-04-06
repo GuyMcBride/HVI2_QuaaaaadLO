@@ -17,6 +17,7 @@ def configure_hvi(config):
         )
     loop_count = config.hvi.get_constant("NumberOfLoops")
     iteration_count = config.hvi.get_constant("NumberOfIterations")
+    frequency_increment = config.hvi.get_constant("FrequencyIncrement")
     gap = config.hvi.get_constant("Gap")
     trigger_awgs = ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"]
     trigger_daqs = ["daq1_trigger", "daq2_trigger", "daq3_trigger", "daq4_trigger"]
