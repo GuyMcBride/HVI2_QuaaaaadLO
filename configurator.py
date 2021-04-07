@@ -49,7 +49,7 @@ def main():
 
     # phaseSource : 0 = PC sets the phase source
     #               1 = HVI sets the phase source
-    phaseSource = 0
+    phaseSource = 1
 
     # frequencySource : 0 = PC sets the frequency source
     #               1 = HVI sets the frequency source
@@ -149,6 +149,8 @@ def main():
         Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
         Register("HVI_CH4_PhaseInc0A", A(lo1_1_0)),
         Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
+        Register("HVI_CH1_Phase0", 0),
+        Register("HVI_CH4_Phase0", 0),
     ]
 
     # Fpga:
@@ -176,6 +178,7 @@ def main():
         Register("LoopCounter", 0),
         Register("IterationCounter", 0),
         Register("FrequencyIterator", A(lo1_1_0)),
+        Register("PhaseIterator", 0),
     ]
 
     # SubPulseDescriptor:
@@ -268,7 +271,9 @@ def main():
         HviConstant("NumberOfLoops", loops),
         HviConstant("NumberOfIterations", iterations),
         HviConstant("Gap", int(pulseGap / 1e-9)),
-        HviConstant("FrequencyIncrement", A(lo1_1_0)),
+#        HviConstant("FrequencyIncrement", A(lo1_1_0)),
+        HviConstant("FrequencyIncrement", 0),
+        HviConstant("PhaseIncrement", 2**13),
     ]
 
     # HVI:

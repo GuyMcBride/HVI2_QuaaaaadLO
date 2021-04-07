@@ -24,6 +24,7 @@ def configure_hvi(config):
     loop_count = config.hvi.get_constant("NumberOfLoops")
     iteration_count = config.hvi.get_constant("NumberOfIterations")
     frequency_increment = config.hvi.get_constant("FrequencyIncrement")
+    phase_increment = config.hvi.get_constant("PhaseIncrement")
     gap = config.hvi.get_constant("Gap")
     trigger_awgs = ["awg1_trigger", "awg2_trigger", "awg3_trigger", "awg4_trigger"]
     trigger_daqs = ["daq1_trigger", "daq2_trigger", "daq3_trigger", "daq4_trigger"]
@@ -121,13 +122,20 @@ def configure_hvi(config):
     hvi.set_register("Clear Loop Counter", "AWG_LEAD", "LoopCounter", 0)
     hvi.incrementRegister("Increment Iteration counter", "AWG_LEAD", "IterationCounter")
     hvi.addToRegister("Increment Frequency", "AWG_LEAD", "FrequencyIterator", frequency_increment)
+    hvi.addToRegister("Increment Phase", "AWG_LEAD", "PhaseIterator", phase_increment)
     hvi.writeFpgaRegister(
         "Set Frequency CH1", "AWG_LEAD", "HVI_CH1_PhaseInc0A", "FrequencyIterator", 60
     )
     hvi.writeFpgaRegister(
         "Set Frequency CH4", "AWG_LEAD", "HVI_CH4_PhaseInc0A", "FrequencyIterator"
     )
-    hvi.delay("Wait Gap time", "AWG_LEAD", 100)
+    hvi.writeFpgaRegister(
+        "Set Phase CH1", "AWG_LEAD", "HVI_CH1_Phase0", "PhaseIterator", 60
+    )
+    hvi.writeFpgaRegister(
+        "Set Phase CH4", "AWG_LEAD", "HVI_CH4_Phase0", "PhaseIterator"
+    )
+#    hvi.delay("Wait Gap time", "AWG_LEAD", 100)
     hvi.end_sync_multi_sequence_block()
     hvi.end_syncWhile()  
     # End Main Loop
