@@ -10,6 +10,8 @@ import os
 import logging
 from dataclasses import dataclass, field
 from collections import deque
+from typing import List
+
 
 sys.path.append(
     r"C:/Program Files/Keysight/PathWave Test Sync Executive 2020 Update 1.0/api/python"
@@ -36,9 +38,9 @@ class ModuleDescriptor:
     """Holds a 'description' of a used module """
 
     name: str
-    events: [str] = field(default_factory=list)
-    actions: [str] = field(default_factory=list)
-    hvi_registers: [str] = field(default_factory=list)
+    events: List[str] = field(default_factory=list)
+    actions: List[str] = field(default_factory=list)
+    hvi_registers: List[str] = field(default_factory=list)
     fpga: str = None
     handle: int = None
     _current_sequence = None
