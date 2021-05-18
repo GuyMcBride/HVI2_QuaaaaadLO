@@ -144,6 +144,9 @@ def main():
     ]
 
     hviFpgaRegisters = [
+        Register("HVI_Mult_A", 0x00),
+        Register("HVI_Mult_B", 0x00),
+        Register("HVI_Mult_AB", 0x00),
         Register("HVI_GLOBAL_PhaseReset", 0),
         Register("HVI_CH1_PhaseInc0A", A(lo1_1_0)),
         Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
@@ -151,6 +154,8 @@ def main():
         Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
         Register("HVI_CH1_Phase0", 0),
         Register("HVI_CH4_Phase0", 0),
+        Register("HVI_CH1_Amplitude0", 0xffff),
+        Register("HVI_CH4_Amplitude0", 0xffff),
     ]
 
     # Fpga:
@@ -179,6 +184,8 @@ def main():
         Register("IterationCounter", 0),
         Register("FrequencyIterator", A(lo1_1_0)),
         Register("PhaseIterator", 0),
+        Register("AmplitudeIterator", 0xfff),
+        Register("AB", 0),
     ]
 
     # SubPulseDescriptor:

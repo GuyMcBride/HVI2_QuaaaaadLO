@@ -120,17 +120,17 @@ def configureAwg(chassis, module):
         # It assumes that the source is to be directly from the AWG, rather
         # than function generator.
         log.info(f"Setting Output Characteristics for channel {channel}")
-        error = module.handle.channelWaveShape(channel, key.SD_Waveshapes.AOU_AWG)
+        error = module.handle.channelWaveShape(channel + 1, key.SD_Waveshapes.AOU_SINUSOIDAL)
         if error < 0:
-            log.warn(f"Error Setting Waveshape - {error}")
-        error = module.handle.channelAmplitude(channel, 1.5)
+            log.warn(f"Error Setting Waveshape - {error}, {key.SD_Error.getErrorMessage(error)}")
+        error = module.handle.channelAmplitude(channel + 1, 1.0)
         if error < 0:
-            log.warn(f"Error Setting Amplitude - {error}")
+            log.warn(f"Error Setting Amplitude - {error}, {key.SD_Error.getErrorMessage(error)}")
     loadWaves(module)
     enqueueWaves(module)
     trigmask = 0
     for channel in range(module.channels):
-        awg.channelWaveShape(channel + 1, key.SD_Waveshapes.AOU_AWG)
+        awg.channelWaveShape(channel + 1, key.SD_Waveshapes.AOU_SINUSOIDAL)
 
 
 # Remove this if using HVI
@@ -308,7 +308,7 @@ def configureDig(chassis, module):
         error = dig.DAQstart(daq.channel)
         if error < 0:
             log.info("Error Starting Digitizer")
-    log.info(f"Special Configuring {daq.channel}")
+    log.info(f"Special Configuring")
     try:
         hvi.configure_digitizer(module)
     except AttributeError:
@@ -328,8 +328,7 @@ def getDigDataRaw(module):
                     f"Slot:{module.slot} Attempted to Read {pointsPerCycle} samples, "
                     f"actually read {len(dataRead)} samples"
                 )
-            if capture != 0:
-                channelData.append(dataRead)
+            channelData.append(dataRead)
         daqData.append(channelData)
     return daqData
 
