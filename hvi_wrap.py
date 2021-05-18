@@ -288,6 +288,12 @@ def set_register(name, module, register, value, delay=10):
     instruction.set_parameter(sequence.instruction_set.assign.source.id, value)
 
 
+def read_register_runtime(module, register):
+    register_runtime = hvi_handle.sync_sequence.scopes[module].registers[register]
+    value = register_runtime.read()
+    return value
+
+
 def incrementRegister(name, module, register, delay=10):
     """Increments <register> in <module>"""
     addToRegister(name, module, register, 1, delay)
@@ -325,6 +331,26 @@ def writeFpgaRegister(name, module, register, value, delay=10):
     if type(value) is str:
         value = sequence.scope.registers[value]
     instruction.set_parameter(reg_cmd.value.id, value)
+    return
+
+
+def readFpgaRegister(name, module, fpga_register, hvi_register, delay=10):
+    """
+    Writes <value> to module's FPGA register: <register>.
+
+    name : title given to this instruction.
+    register : name of the FPGA register
+    value : to be written to the register
+    """
+    sequence = _get_current_sequence(module)
+    statement_name = _statement_name(sequence, name)
+    register_id = sequence.engine.fpga_sandboxes[0].fpga_registers[fpga_register]
+    log.info(f"......{statement_name}")
+    reg_cmd = sequence.instruction_set.fpga_register_read
+    instruction = sequence.add_instruction(statement_name, delay, reg_cmd.id)
+    instruction.set_parameter(reg_cmd.fpga_register.id, register_id)
+    dest_register = sequence.scope.registers[hvi_register]
+    instruction.set_parameter(reg_cmd.destination.id, dest_register)
     return
 
 
