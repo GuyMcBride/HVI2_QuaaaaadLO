@@ -280,7 +280,7 @@ def main():
         HviConstant("Gap", int(pulseGap / 1e-9)),
 #        HviConstant("FrequencyIncrement", A(lo1_1_0)),
         HviConstant("FrequencyIncrement", 0),
-        HviConstant("PhaseIncrement", 2**13),
+        HviConstant("PhaseIncrement", int(180 * 1024/360)),
     ]
 
     # HVI:
