@@ -150,11 +150,15 @@ def main():
         Register("HVI_GLOBAL_PhaseReset", 0),
         Register("HVI_CH1_PhaseInc0A", A(lo1_1_0)),
         Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
+        Register("HVI_CH3_PhaseInc0A", A(lo1_1_0)),
+        Register("HVI_CH3_PhaseInc0B", B(lo1_1_0)),
         Register("HVI_CH4_PhaseInc0A", A(lo1_1_0)),
         Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
         Register("HVI_CH1_Phase0", 0),
+        Register("HVI_CH3_Phase0", 0),
         Register("HVI_CH4_Phase0", 0),
         Register("HVI_CH1_Amplitude0", 0xffff),
+        Register("HVI_CH3_Amplitude0", 0xffff),
         Register("HVI_CH4_Amplitude0", 0xffff),
     ]
 
@@ -207,7 +211,7 @@ def main():
     # PulseDescriptor
     #    #1 - Waveform ID to be used. Must be unique for every pulse (PulseGroup)
     #    #2 - The length of the pulse window
-    #            (must be long enough to hold all pulse enelopes, with transition times)
+    #            (must be long enough to hold all pulse envelopes, with transition times)
     #    #3 - List of SubPulseDescriptor details - to maximum of 5.
     pulseDescriptor1 = PulseDescriptor(1, 60e-06, pulseGroup)
     pulseDescriptor2 = PulseDescriptor(2, 60e-06, pulseGroup2)
@@ -281,6 +285,7 @@ def main():
 #        HviConstant("FrequencyIncrement", A(lo1_1_0)),
         HviConstant("FrequencyIncrement", 0),
         HviConstant("PhaseIncrement", int(180 * 1024/360)),
+        HviConstant("AmplitudeIncrement", int(500)),
     ]
 
     # HVI:
