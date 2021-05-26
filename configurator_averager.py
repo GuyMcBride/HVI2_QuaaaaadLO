@@ -31,10 +31,10 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    loops = 2
+    loops = 1
 
     # repeats: Number of triggers to generate
-    iterations = 10
+    iterations = 16
 
     # pulseGap: Gap between pulses
     pulseGap = 200e-6
@@ -43,11 +43,10 @@ def main():
     #   #1 - name of register
     #   #2 - value to be written
     pcFpgaRegisters1 = [
-        Register("PC_CH1_ControlAverages", 0x01),
-        Register("PC_CH1_Log2averagesTriggers", 0x01),
-        Register("PC_CH1_SamplesDuration", 128),
-        Register("PC_CH1_PrescalerVersion", 0x00),
-        Register("PC_CH1_FlagsStatus", 0x0),
+        Register("PC_CH1_Control", 0x02),
+        Register("PC_CH1_Log2Averages", 0x00),
+        Register("PC_CH1_Prescaler", 0x00),
+        Register("PC_CH1_Flags", 0x0),
     ]
 
     hviFpgaRegisters = [
@@ -59,7 +58,7 @@ def main():
     #   #2 - filename of 'vanilla' bit image
     #   #3 - list of writable register values
     fpga1 = Fpga(
-        "./FPGA/FrameAverager.k7z",
+        "./FPGA/Averager.k7z",
         "./FPGA/Vanilla_M3102A.k7z",
         pcFpgaRegisters1,
         hviFpgaRegisters,
@@ -81,7 +80,7 @@ def main():
     #    #4 - Amplitude (sum of amplitudes must be < 1.0)
     #    #5 - pulse shaping filter bandwidth
     pulseGroup = [
-        SubPulseDescriptor(10e6, 50e-6, 1e-06, 0.6, 1e06),
+        SubPulseDescriptor(10e6, 10e-6, 1e-06, 0.6, 1e06),
     ]
 
     # PulseDescriptor
@@ -89,7 +88,7 @@ def main():
     #    #2 - The length of the pulse window
     #            (must be long enough to hold all pulse enelopes, with transition times)
     #    #3 - List of SubPulseDescriptor details - to maximum of 5.
-    pulseDescriptor1 = PulseDescriptor(1, 60e-06, pulseGroup)
+    pulseDescriptor1 = PulseDescriptor(1, 150e-06, pulseGroup)
 
     # QueueItem:
     #    #1 - PulseGroup ID that defines the waveform
@@ -107,8 +106,9 @@ def main():
     # DaqDescriptor:
     #    #1 - Channel
     #    #2 - Capture Period
+    #    #3 - Number of captures
     #    #3 - Trigger (False = auto, True = trigger from SW/HVI)
-    daq1 = DaqDescriptor(1, 100e-06, loops * iterations, True)
+    daq1 = DaqDescriptor(1, 150e-06, loops, True)
 
     # AwgDescriptor:
     #    #1 - Name

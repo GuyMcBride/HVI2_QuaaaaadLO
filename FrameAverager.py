@@ -7,21 +7,21 @@ log = logging.getLogger(__name__)
 
 def check_status(config):
     versionReg = config.get_module("DIG_0").handle.FPGAgetSandBoxRegister(
-        "PC_CH1_PrescalerVersion"
+        "PC_CH1_Version"
     )
     averagesReg = config.get_module("DIG_0").handle.FPGAgetSandBoxRegister(
-        "PC_CH1_ControlAverages"
+        "PC_CH1_Averages"
     )
     triggersReg = config.get_module("DIG_0").handle.FPGAgetSandBoxRegister(
-        "PC_CH1_Log2averagesTriggers"
+        "PC_CH1_Triggers"
     )
     durationReg = config.get_module("DIG_0").handle.FPGAgetSandBoxRegister(
-        "PC_CH1_SamplesDuration"
+        "PC_CH1_Duration"
     )
     statusReg = config.get_module("DIG_0").handle.FPGAgetSandBoxRegister(
-        "PC_CH1_FlagsStatus"
+        "PC_CH1_Status"
     )
-    for i in range(10):
+    for i in range(2):
         time.sleep(1)
         log.info(f"Version: {versionReg.readRegisterInt32()}")
         log.info(f"Averages: {averagesReg.readRegisterInt32()}")
@@ -32,12 +32,20 @@ def check_status(config):
 
 
 def configure_digitizer(module):
-    controlReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_ControlAverages")
-    controlReg.writeRegisterInt32(2)
+    controlReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_Control")
+    prescalerReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_Prescaler")
+    samplesReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_Samples")
+    flagsReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_Flags")
+    averagesReg = module.handle.FPGAgetSandBoxRegister("PC_CH1_Log2Averages")
+    points_per_cycle = int(round(module.daqs[0].captureTime * module.sample_rate))
+    log.info(f"Setting averager samples to {points_per_cycle}")
+    samplesReg.writeRegisterInt32(points_per_cycle)
+    log.info(f"Enabling Averager...")
+    controlReg.writeRegisterInt32(0x2)
+    controlReg.writeRegisterInt32(0x1)
 
-    controlReg.writeRegisterInt32(1)
-    module.handle.DAQtriggerMultiple(0xF)
     return
+
 
 
 def configure_hvi(config):
@@ -84,15 +92,10 @@ def configure_hvi(config):
     hvi.incrementRegister("Increment loop counter", "AWG_LEAD", "LoopCounter")
     hvi.delay("Wait Gap time", "AWG_LEAD", gap)
     # DIG_0 Instructions
-    hvi.writeFpgaRegister(
-        "Assert Trigger All via FPGA", "DIG_0", "HVI_GLOBAL_Trigger", 0xFFFF
-    )
-    hvi.writeFpgaRegister(
-        "Deassert Trigger All via FPGA", "DIG_0", "HVI_GLOBAL_Trigger", 0x00
-    )
     hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
     hvi.end_sync_multi_sequence_block()
     hvi.end_syncWhile()  # Iteration Loop
+
     hvi.start_sync_multi_sequence_block("Change Frequency", delay=260)
     hvi.set_register("Clear Loop Counter", "AWG_LEAD", "LoopCounter", 0)
     hvi.incrementRegister("Increment Iteration counter", "AWG_LEAD", "IterationCounter")
