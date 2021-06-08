@@ -157,9 +157,9 @@ def main():
         Register("HVI_CH1_Phase0", 0),
         Register("HVI_CH3_Phase0", 0),
         Register("HVI_CH4_Phase0", 0),
-        Register("HVI_CH1_Amplitude0", 0xffff),
-        Register("HVI_CH3_Amplitude0", 0xffff),
-        Register("HVI_CH4_Amplitude0", 0xffff),
+        Register("HVI_CH1_Amplitude0", int(0.25 * 0xffff)),
+        Register("HVI_CH3_Amplitude0", int(0.25 * 0xffff)),
+        Register("HVI_CH4_Amplitude0", int(0.25 * 0xffff)),
     ]
 
     # Fpga:
@@ -188,7 +188,7 @@ def main():
         Register("IterationCounter", 0),
         Register("FrequencyIterator", A(lo1_1_0)),
         Register("PhaseIterator", 0),
-        Register("AmplitudeIterator", 0xfff),
+        Register("AmplitudeIterator", int(0.25 * 0xffff)),
         Register("AB", 0),
     ]
 
@@ -284,8 +284,8 @@ def main():
         HviConstant("Gap", int(pulseGap / 1e-9)),
 #        HviConstant("FrequencyIncrement", A(lo1_1_0)),
         HviConstant("FrequencyIncrement", 0),
-        HviConstant("PhaseIncrement", int(180 * 1024/360)),
-        HviConstant("AmplitudeIncrement", int(500)),
+        HviConstant("PhaseIncrement", int(90 * 1024/360)),
+        HviConstant("AmplitudeIncrement", int(0.25 * 0xffff)),
     ]
 
     # HVI:
