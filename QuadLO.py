@@ -123,7 +123,7 @@ def configureAwg(chassis, module):
         error = module.handle.channelWaveShape(channel + 1, key.SD_Waveshapes.AOU_SINUSOIDAL)
         if error < 0:
             log.warn(f"Error Setting Waveshape - {error}, {key.SD_Error.getErrorMessage(error)}")
-        error = module.handle.channelAmplitude(channel + 1, 1.0)
+        error = module.handle.channelAmplitude(channel + 1, 1.5)
         if error < 0:
             log.warn(f"Error Setting Amplitude - {error}, {key.SD_Error.getErrorMessage(error)}")
     loadWaves(module)
