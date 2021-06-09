@@ -91,6 +91,9 @@ class ModuleDescriptor:
     fpga: Fpga
     hvi_registers: List[Register]
 
+    def get_register_value(self, register):
+        return [i.value for i in self.hvi_registers if i.name == register][0]
+
 
 @dataclass
 class AwgDescriptor(ModuleDescriptor):
