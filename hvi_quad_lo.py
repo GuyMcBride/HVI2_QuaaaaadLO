@@ -49,8 +49,8 @@ def configure_hvi(config):
     lo_freq_0B = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
         "HVI_CH1_PhaseInc0B"
     )
-    lo_amplitude = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
-        "HVI_CH1_Amplitude0"
+    lo_amplitude = config.get_module("AWG_LEAD").get_register_value(
+        "AmplitudeIterator"
     )
     hvi.set_register(
         "Set Initial Frequency", "AWG_LEAD", "FrequencyIterator", lo_freq_0A
