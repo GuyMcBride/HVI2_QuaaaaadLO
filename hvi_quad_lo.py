@@ -44,28 +44,29 @@ def configure_hvi(config):
     hvi.start_sync_multi_sequence_block("Initialize", delay=30)
     # AWG_LEAD Instructions
     lo_freq_0A = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
-        "HVI_CH1_PhaseInc0A"
+        "HVI_CH1_PhaseIncA0"
     )
     lo_freq_0B = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
-        "HVI_CH1_PhaseInc0B"
+        "HVI_CH1_PhaseIncB0"
     )
-    lo_amplitude = config.get_module("AWG_LEAD").get_register_value(
-        "AmplitudeIterator"
-    )
+    lo_amplitude = config.get_module("AWG_LEAD").get_register_value("AmplitudeIterator")
     hvi.set_register(
         "Set Initial Frequency", "AWG_LEAD", "FrequencyIterator", lo_freq_0A
     )
-    hvi.writeFpgaRegister("Set CH1 LO0A", "AWG_LEAD", "HVI_CH1_PhaseInc0A", lo_freq_0A)
-    hvi.writeFpgaRegister("Set CH1 LO0B", "AWG_LEAD", "HVI_CH1_PhaseInc0B", lo_freq_0B)
+    hvi.writeFpgaRegister("Set CH1 LO0A", "AWG_LEAD", "HVI_CH1_PhaseIncA0", lo_freq_0A)
+    hvi.writeFpgaRegister("Set CH1 LO0B", "AWG_LEAD", "HVI_CH1_PhaseIncB0", lo_freq_0B)
 
-    hvi.writeFpgaRegister("Set CH3 LO0A", "AWG_LEAD", "HVI_CH3_PhaseInc0A", lo_freq_0A)
-    hvi.writeFpgaRegister("Set CH3 LO0B", "AWG_LEAD", "HVI_CH3_PhaseInc0B", lo_freq_0B)
+    hvi.writeFpgaRegister("Set CH3 LO0A", "AWG_LEAD", "HVI_CH3_PhaseIncA0", lo_freq_0A)
+    hvi.writeFpgaRegister("Set CH3 LO0B", "AWG_LEAD", "HVI_CH3_PhaseIncB0", lo_freq_0B)
 
-    hvi.writeFpgaRegister("Set CH4 LO0A", "AWG_LEAD", "HVI_CH4_PhaseInc0A", lo_freq_0A)
-    hvi.writeFpgaRegister("Set CH4 LO0B", "AWG_LEAD", "HVI_CH4_PhaseInc0B", lo_freq_0B)
+    hvi.writeFpgaRegister("Set CH4 LO0A", "AWG_LEAD", "HVI_CH4_PhaseIncA0", lo_freq_0A)
+    hvi.writeFpgaRegister("Set CH4 LO0B", "AWG_LEAD", "HVI_CH4_PhaseIncB0", lo_freq_0B)
 
     hvi.set_register(
         "Set Initial Amplitude", "AWG_LEAD", "AmplitudeIterator", lo_amplitude
+    )
+    hvi.set_register(
+        "Set Gap", "AWG_LEAD", "GapIterator", gap
     )
     hvi.delay("Wait for register", "AWG_LEAD", 60)
     hvi.writeFpgaRegister(
@@ -91,9 +92,9 @@ def configure_hvi(config):
     hvi.set_register("Clear Iteration Counter", "AWG_LEAD", "IterationCounter", 0)
 
     # Test the multiplier function
-    hvi.writeFpgaRegister("Set multA", "AWG_LEAD", "HVI_Mult_A", 0x3)
-    hvi.writeFpgaRegister("Set multB", "AWG_LEAD", "HVI_Mult_B", 0x4)
-    hvi.readFpgaRegister("Read multAB", "AWG_LEAD", "HVI_Mult_AB", "AB", delay=20)
+    hvi.writeFpgaRegister("Set multA", "AWG_LEAD", "HVI_GLOBAL_MultA", 0x3)
+    hvi.writeFpgaRegister("Set multB", "AWG_LEAD", "HVI_GLOBAL_MultB", 0x4)
+    hvi.readFpgaRegister("Read multAB", "AWG_LEAD", "HVI_GLOBAL_MultAB", "AB", delay=20)
 
     # AWG_FOLLOW_0 Instructions
     hvi.writeFpgaRegister(
@@ -141,6 +142,7 @@ def configure_hvi(config):
     # AWG_LEAD Instructions
     hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
     hvi.incrementRegister("Increment loop counter", "AWG_LEAD", "LoopCounter")
+#    hvi.delay("Wait Gap time", "AWG_LEAD", "GapIterator")
     hvi.delay("Wait Gap time", "AWG_LEAD", gap)
     # AWG_FOLLOW_0 Instructions
     hvi.execute_actions("Trigger All", "AWG_FOLLOW_0", trigger_awgs)
@@ -157,7 +159,9 @@ def configure_hvi(config):
         "Increment Frequency", "AWG_LEAD", "FrequencyIterator", frequency_increment
     )
     hvi.addToRegister("Increment Phase", "AWG_LEAD", "PhaseIterator", phase_increment)
-    hvi.addToRegister("Increment Amplitude", "AWG_LEAD", "AmplitudeIterator", amplitude_increment)
+    hvi.addToRegister(
+        "Increment Amplitude", "AWG_LEAD", "AmplitudeIterator", amplitude_increment
+    )
     hvi.delay("Wait for register", "AWG_LEAD", 60)
     hvi.writeFpgaRegister(
         "Set CH1 LO Amplitude",
@@ -178,13 +182,13 @@ def configure_hvi(config):
         "AmplitudeIterator",
     )
     hvi.writeFpgaRegister(
-        "Set Frequency CH1", "AWG_LEAD", "HVI_CH1_PhaseInc0A", "FrequencyIterator"
+        "Set Frequency CH1", "AWG_LEAD", "HVI_CH1_PhaseIncA0", "FrequencyIterator"
     )
     hvi.writeFpgaRegister(
-        "Set Frequency CH3", "AWG_LEAD", "HVI_CH3_PhaseInc0A", "FrequencyIterator"
+        "Set Frequency CH3", "AWG_LEAD", "HVI_CH3_PhaseIncA0", "FrequencyIterator"
     )
     hvi.writeFpgaRegister(
-        "Set Frequency CH4", "AWG_LEAD", "HVI_CH4_PhaseInc0A", "FrequencyIterator"
+        "Set Frequency CH4", "AWG_LEAD", "HVI_CH4_PhaseIncA0", "FrequencyIterator"
     )
     hvi.writeFpgaRegister(
         "Set Phase CH1", "AWG_LEAD", "HVI_CH1_Phase0", "PhaseIterator"

@@ -120,11 +120,13 @@ def define_system(name: str, **kwargs):
                 if err.args[0] == "No interface named 'MainEngine_Memory'":
                     log.info("No HVI registers")
                 else:
-                    raise(err)
- 
-        for register in system_definition.engines[module.name].fpga_sandboxes[0].fpga_registers:
+                    raise (err)
+
+        for register in (
+            system_definition.engines[module.name].fpga_sandboxes[0].fpga_registers
+        ):
             log.info(f"...... {register.name}")
-            
+
     log.info("Creating Main Sequencer Block...")
     sequencer = kthvi.Sequencer(f"{name}_Sequencer", system_definition)
     current_sync_sequence.append(sequencer.sync_sequence)
@@ -216,9 +218,7 @@ def start_syncWhile_register(name, engine, register, comparison, value, delay=70
     condition = kthvi.Condition.register_comparison(
         whileRegister, comparison_operator, value
     )
-    while_sequence = sequence.add_sync_while(
-        statement_name, delay, condition
-    )
+    while_sequence = sequence.add_sync_while(statement_name, delay, condition)
     current_sync_sequence.append(while_sequence.sync_sequence)
     return
 
@@ -310,6 +310,8 @@ def addToRegister(name, module, register, value, delay=10):
     )
     instruction.set_parameter(sequence.instruction_set.add.destination.id, register_id)
     instruction.set_parameter(sequence.instruction_set.add.left_operand.id, register_id)
+    if type(value) is str:
+        value = sequence.scope.registers[value]
     instruction.set_parameter(sequence.instruction_set.add.right_operand.id, value)
 
 
@@ -377,6 +379,21 @@ def delay(name, module, delay=10):
     statement_name = _statement_name(sequence, name)
     log.info(f"......{statement_name}")
     sequence.add_delay(name, delay)
+
+
+def delay_register(name, module, register, delay=10):
+    """
+    Adds an instruction called <name> to sequence for <module> to the current block
+    to delay for <delay> ns.
+    """
+    sequence = _get_current_sequence(module)
+    statement_name = _statement_name(sequence, name)
+    log.info(f"......{statement_name}")
+    if type(time) is str:
+        reg = sequence.scope.registers[register]
+        sequence.add_wait_time(name, delay, reg)
+    else:
+        log.error(f"......{statement_name}, register must be a string")
 
 
 # AWG specific HVI Sequence Instructions

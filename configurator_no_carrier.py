@@ -31,10 +31,10 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    loops = 5
+    loops = 2
 
     # repeats: Number of triggers to generate
-    iterations = 2
+    iterations = 6
 
     # resetPhases:  0 = Only reset phase at initialization
     #               1 = Reset Phase each time around repeat loop
@@ -188,7 +188,7 @@ def main():
         Register("IterationCounter", 0),
         Register("FrequencyIterator", A(lo1_1_0)),
         Register("PhaseIterator", 0),
-        Register("AmplitudeIterator", int(0.25 * 0xFFFF)),
+        Register("AmplitudeIterator", int(0)),
         Register("AB", 0),
     ]
 
@@ -285,7 +285,7 @@ def main():
         #        HviConstant("FrequencyIncrement", A(lo1_1_0)),
         HviConstant("FrequencyIncrement", 0),
         HviConstant("PhaseIncrement", int(0 * 1024 / 360)),
-        HviConstant("AmplitudeIncrement", int(0.75 * 0xFFFF)),
+        HviConstant("AmplitudeIncrement", int(0.125 * 0xFFFF)),
     ]
 
     # HVI:

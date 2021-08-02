@@ -31,14 +31,14 @@ log = logging.getLogger(__name__)
 
 def main():
     # repeats: Number of triggers to generate
-    loops = 5
+    loops = 2
 
     # repeats: Number of triggers to generate
-    iterations = 2
+    iterations = 5
 
     # resetPhases:  0 = Only reset phase at initialization
     #               1 = Reset Phase each time around repeat loop
-    resetPhase = 1
+    resetPhase = 0
 
     # pulseGap: Gap between pulses
     pulseGap = 200e-6
@@ -57,9 +57,9 @@ def main():
 
     # Lo frequency definitions (card_channel_LO)
     lo1_1_0 = 10e6
-    lo1_1_1 = 30e6
-    lo1_1_2 = 50e6
-    lo1_1_3 = 70e6
+    lo1_1_1 = 00e6
+    lo1_1_2 = 00e6
+    lo1_1_3 = 00e6
 
     lophase1_1_0 = 0
     lophase4_1_0 = 0
@@ -71,89 +71,73 @@ def main():
     #   #2 - value to be written
     pcFpgaRegisters1 = [
         Register("PC_CH1_Control", control),
-        Register("PC_CH1_Q0", Q(lophase1_1_0)),
-        Register("PC_CH1_I0", I(lophase1_1_0)),
-        Register("PC_CH1_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH1_PhaseInc0B", B(lo1_1_0)),
-        Register("PC_CH1_Q1", Q(lophase1_1_0)),
-        Register("PC_CH1_I1", I(lophase1_1_0)),
-        Register("PC_CH1_PhaseInc1A", A(lo1_1_1)),
-        Register("PC_CH1_PhaseInc1B", B(lo1_1_1)),
-        Register("PC_CH1_Q2", Q(lophase1_1_0)),
-        Register("PC_CH1_I2", I(lophase1_1_0)),
-        Register("PC_CH1_PhaseInc2A", A(lo1_1_2)),
-        Register("PC_CH1_PhaseInc2B", B(lo1_1_2)),
-        Register("PC_CH1_Q3", Q(lophase1_1_0)),
-        Register("PC_CH1_I3", I(lophase1_1_0)),
-        Register("PC_CH1_PhaseInc3A", A(lo1_1_3)),
-        Register("PC_CH1_PhaseInc3B", B(lo1_1_3)),
+        Register("PC_CH1_IQ0", IQ(lophase1_1_0)),
+        Register("PC_CH1_PhaseIncA0", A(lo1_1_0)),
+        Register("PC_CH1_PhaseIncB0", B(lo1_1_0)),
+        Register("PC_CH1_IQ1", IQ(lophase1_1_0)),
+        Register("PC_CH1_PhaseIncA1", A(lo1_1_1)),
+        Register("PC_CH1_PhaseIncB1", B(lo1_1_1)),
+        Register("PC_CH1_IQ2", IQ(lophase1_1_0)),
+        Register("PC_CH1_PhaseIncA2", A(lo1_1_2)),
+        Register("PC_CH1_PhaseIncB2", B(lo1_1_2)),
+        Register("PC_CH1_IQ3", IQ(lophase1_1_0)),
+        Register("PC_CH1_PhaseIncA3", A(lo1_1_3)),
+        Register("PC_CH1_PhaseIncB3", B(lo1_1_3)),
         Register("PC_CH3_Control", control),
-        Register("PC_CH3_Q0", Q(lophase1_1_0)),
-        Register("PC_CH3_I0", I(lophase1_1_0)),
-        Register("PC_CH3_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH3_PhaseInc0B", B(lo1_1_0)),
-        Register("PC_CH3_Q1", Q(lophase1_1_0)),
-        Register("PC_CH3_I1", I(lophase1_1_0)),
-        Register("PC_CH3_PhaseInc1A", A(lo1_1_1)),
-        Register("PC_CH3_PhaseInc1B", B(lo1_1_1)),
-        Register("PC_CH3_Q2", Q(lophase1_1_0)),
-        Register("PC_CH3_I2", I(lophase1_1_0)),
-        Register("PC_CH3_PhaseInc2A", A(lo1_1_2)),
-        Register("PC_CH3_PhaseInc2B", B(lo1_1_2)),
-        Register("PC_CH3_Q3", Q(lophase1_1_0)),
-        Register("PC_CH3_I3", I(lophase1_1_0)),
-        Register("PC_CH3_PhaseInc3A", A(lo1_1_3)),
-        Register("PC_CH3_PhaseInc3B", B(lo1_1_3)),
+        Register("PC_CH3_IQ0", IQ(lophase1_1_0)),
+        Register("PC_CH3_PhaseIncA0", A(lo1_1_0)),
+        Register("PC_CH3_PhaseIncB0", B(lo1_1_0)),
+        Register("PC_CH3_IQ1", IQ(lophase1_1_0)),
+        Register("PC_CH3_PhaseIncA1", A(lo1_1_1)),
+        Register("PC_CH3_PhaseIncB1", B(lo1_1_1)),
+        Register("PC_CH3_IQ2", IQ(lophase1_1_0)),
+        Register("PC_CH3_PhaseIncA2", A(lo1_1_2)),
+        Register("PC_CH3_PhaseIncB2", B(lo1_1_2)),
+        Register("PC_CH3_IQ3", IQ(lophase1_1_0)),
+        Register("PC_CH3_PhaseIncA3", A(lo1_1_3)),
+        Register("PC_CH3_PhaseIncB3", B(lo1_1_3)),
         Register("PC_CH4_Control", control),
-        Register("PC_CH4_Q0", Q(lophase1_1_0)),
-        Register("PC_CH4_I0", I(lophase1_1_0)),
-        Register("PC_CH4_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH4_PhaseInc0B", B(lo1_1_0)),
-        Register("PC_CH4_Q1", Q(lophase1_1_0)),
-        Register("PC_CH4_I1", I(lophase1_1_0)),
-        Register("PC_CH4_PhaseInc1A", A(lo1_1_1)),
-        Register("PC_CH4_PhaseInc1B", B(lo1_1_1)),
-        Register("PC_CH4_Q2", Q(lophase1_1_0)),
-        Register("PC_CH4_I2", I(lophase1_1_0)),
-        Register("PC_CH4_PhaseInc2A", A(lo1_1_2)),
-        Register("PC_CH4_PhaseInc2B", B(lo1_1_2)),
-        Register("PC_CH4_Q3", Q(lophase1_1_0)),
-        Register("PC_CH4_I3", I(lophase1_1_0)),
-        Register("PC_CH4_PhaseInc3A", A(lo1_1_3)),
-        Register("PC_CH4_PhaseInc3B", B(lo1_1_3)),
+        Register("PC_CH4_IQ0", IQ(lophase1_1_0)),
+        Register("PC_CH4_PhaseIncA0", A(lo1_1_0)),
+        Register("PC_CH4_PhaseIncB0", B(lo1_1_0)),
+        Register("PC_CH4_IQ1", IQ(lophase1_1_0)),
+        Register("PC_CH4_PhaseIncA1", A(lo1_1_1)),
+        Register("PC_CH4_PhaseIncB1", B(lo1_1_1)),
+        Register("PC_CH4_IQ2", IQ(lophase1_1_0)),
+        Register("PC_CH4_PhaseIncA2", A(lo1_1_2)),
+        Register("PC_CH4_PhaseIncB2", B(lo1_1_2)),
+        Register("PC_CH4_IQ3", IQ(lophase1_1_0)),
+        Register("PC_CH4_PhaseIncA3", A(lo1_1_3)),
+        Register("PC_CH4_PhaseIncB3", B(lo1_1_3)),
     ]
 
     pcFpgaRegisters2 = [
         Register("PC_CH1_Control", control),
-        Register("PC_CH1_Q0", Q(lophase4_1_0)),
-        Register("PC_CH1_I0", I(lophase4_1_0)),
-        Register("PC_CH1_PhaseInc0A", A(lo1_1_0)),
-        Register("PC_CH1_PhaseInc0B", B(lo1_1_0)),
-        Register("PC_CH1_Q1", Q(lophase4_1_0)),
-        Register("PC_CH1_I1", I(lophase4_1_0)),
-        Register("PC_CH1_PhaseInc1A", A(lo1_1_1)),
-        Register("PC_CH1_PhaseInc1B", B(lo1_1_1)),
-        Register("PC_CH1_Q2", Q(lophase4_1_0)),
-        Register("PC_CH1_I2", I(lophase4_1_0)),
-        Register("PC_CH1_PhaseInc2A", A(lo1_1_2)),
-        Register("PC_CH1_PhaseInc2B", B(lo1_1_2)),
-        Register("PC_CH1_Q3", Q(lophase4_1_0)),
-        Register("PC_CH1_I3", I(lophase4_1_0)),
-        Register("PC_CH1_PhaseInc3A", A(lo1_1_3)),
-        Register("PC_CH1_PhaseInc3B", B(lo1_1_3)),
+        Register("PC_CH1_IQ0", IQ(lophase4_1_0)),
+        Register("PC_CH1_PhaseIncA0", A(lo1_1_0)),
+        Register("PC_CH1_PhaseIncB0", B(lo1_1_0)),
+        Register("PC_CH1_IQ1", IQ(lophase4_1_0)),
+        Register("PC_CH1_PhaseIncA1", A(lo1_1_1)),
+        Register("PC_CH1_PhaseIncB1", B(lo1_1_1)),
+        Register("PC_CH1_IQ2", IQ(lophase4_1_0)),
+        Register("PC_CH1_PhaseIncA2", A(lo1_1_2)),
+        Register("PC_CH1_PhaseIncB2", B(lo1_1_2)),
+        Register("PC_CH1_IQ3", IQ(lophase4_1_0)),
+        Register("PC_CH1_PhaseIncA3", A(lo1_1_3)),
+        Register("PC_CH1_PhaseIncB3", B(lo1_1_3)),
     ]
 
     hviFpgaRegisters = [
-        Register("HVI_Mult_A", 0x00),
-        Register("HVI_Mult_B", 0x00),
-        Register("HVI_Mult_AB", 0x00),
+        Register("HVI_GLOBAL_MultA", 0x00),
+        Register("HVI_GLOBAL_MultB", 0x00),
+        Register("HVI_GLOBAL_MultAB", 0x00),
         Register("HVI_GLOBAL_PhaseReset", 0),
-        Register("HVI_CH1_PhaseInc0A", A(lo1_1_0)),
-        Register("HVI_CH1_PhaseInc0B", B(lo1_1_0)),
-        Register("HVI_CH3_PhaseInc0A", A(lo1_1_0)),
-        Register("HVI_CH3_PhaseInc0B", B(lo1_1_0)),
-        Register("HVI_CH4_PhaseInc0A", A(lo1_1_0)),
-        Register("HVI_CH4_PhaseInc0B", B(lo1_1_0)),
+        Register("HVI_CH1_PhaseIncA0", A(lo1_1_0)),
+        Register("HVI_CH1_PhaseIncB0", B(lo1_1_0)),
+        Register("HVI_CH3_PhaseIncA0", A(lo1_1_0)),
+        Register("HVI_CH3_PhaseIncB0", B(lo1_1_0)),
+        Register("HVI_CH4_PhaseIncA0", A(lo1_1_0)),
+        Register("HVI_CH4_PhaseIncB0", B(lo1_1_0)),
         Register("HVI_CH1_Phase0", 0),
         Register("HVI_CH3_Phase0", 0),
         Register("HVI_CH4_Phase0", 0),
@@ -167,14 +151,14 @@ def main():
     #   #2 - filename of 'vanilla' bit image
     #   #3 - list of writable register values
     fpga1 = Fpga(
-        "./FPGA/QuadLoCh1_4_01_20.k7z",
+        "./FPGA/QuadLo.k7z",
         "./FPGA/M3202A_Vanilla.k7z",
         pcFpgaRegisters1,
         hviFpgaRegisters,
     )
 
     fpga2 = Fpga(
-        "./FPGA/QuadLoCh1_4_01_20.k7z",
+        "./FPGA/QuadLo.k7z",
         "./FPGA/M3202A_Vanilla.k7z",
         pcFpgaRegisters2,
         hviFpgaRegisters,
@@ -188,7 +172,8 @@ def main():
         Register("IterationCounter", 0),
         Register("FrequencyIterator", A(lo1_1_0)),
         Register("PhaseIterator", 0),
-        Register("AmplitudeIterator", int(0.25 * 0xFFFF)),
+        Register("AmplitudeIterator", 0),
+        Register("GapIterator", 0),
         Register("AB", 0),
     ]
 
@@ -200,10 +185,10 @@ def main():
     #    #4 - Amplitude (sum of amplitudes must be < 1.0)
     #    #5 - pulse shaping filter bandwidth
     pulseGroup = [
-        SubPulseDescriptor(0, 10e-6, 1e-06, 0.6, 1e06),
-        SubPulseDescriptor(0, 10e-6, 1e-06, 0.2, 1e06),
-        SubPulseDescriptor(0, 10e-6, 1e-06, 0.12, 1e06),
-        SubPulseDescriptor(0, 10e-6, 1e-06, 0.086, 1e06),
+        SubPulseDescriptor(0, 10e-6, 1e-06, 1, 1e06),
+        SubPulseDescriptor(0, 10e-6, 1e-06, 0, 1e06),
+        SubPulseDescriptor(0, 10e-6, 1e-06, 0, 1e06),
+        SubPulseDescriptor(0, 10e-6, 1e-06, 0, 1e06),
     ]
 
     pulseGroup2 = [SubPulseDescriptor(10e6, 10e-6, 1e-06, 0.5, 1e06)]
@@ -285,7 +270,8 @@ def main():
         #        HviConstant("FrequencyIncrement", A(lo1_1_0)),
         HviConstant("FrequencyIncrement", 0),
         HviConstant("PhaseIncrement", int(180 * 1024 / 360)),
-        HviConstant("AmplitudeIncrement", int(0.75 * 0xFFFF)),
+        HviConstant("AmplitudeIncrement", int(0.25 * 0x4000)),
+        HviConstant("GapIncrement", int(0 * 0xFFFF)),
     ]
 
     # HVI:
@@ -343,11 +329,15 @@ def B(f, fs=1e9):
 
 
 def I(phase):
-    return int(round(32767 * math.cos(math.radians(phase))))
+    return int(round((2**15 -1) * math.cos(math.radians(phase))))
 
 
 def Q(phase):
-    return int(round(32767 * math.sin(math.radians(phase))))
+    return int(round((2**15 -1) * math.sin(math.radians(phase))))
+
+
+def IQ(phase):
+    return I(phase) + Q(phase << 2**16)
 
 
 if __name__ == "__main__":
