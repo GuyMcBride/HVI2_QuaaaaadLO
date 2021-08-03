@@ -14,7 +14,7 @@ from typing import List
 
 
 sys.path.append(
-    r"C:/Program Files/Keysight/PathWave Test Sync Executive 2020 Update 1.0/api/python"
+    r"C:/Program Files/Keysight/PathWave Test Sync Executive 2020 Update 1.1/api/python"
 )
 import keysight_hvi as kthvi
 
@@ -92,9 +92,12 @@ def define_system(name: str, **kwargs):
             else:
                 actions = module.actions
             for action in actions:
-                log.info(f"...adding: {action}")
-                action_id = getattr(module.handle.hvi.actions, action)
-                system_definition.engines[module.name].actions.add(action_id, action)
+                if action.startswith("daq") and int(action[3]) > 4:
+                    log.debug(f"found illegal daq action: {action}, skipping")
+                else:
+                    log.info(f"...adding: {action}")
+                    action_id = getattr(module.handle.hvi.actions, action)
+                    system_definition.engines[module.name].actions.add(action_id, action)
 
         log.info(f"...Declaring events used by: {module.name}...")
         if module.events is not None:
@@ -105,9 +108,12 @@ def define_system(name: str, **kwargs):
             else:
                 events = module.events
             for event in events:
-                log.info(f"...adding: {event}")
-                event_id = getattr(module.handle.hvi.events, event)
-                system_definition.engines[module.name].events.add(event_id, event)
+                if event.startswith("daq") and int(event[3]) > 4:
+                    log.debug(f"found illegal daq event: {action}, skipping")
+                else:
+                    log.info(f"...adding: {event}")
+                    event_id = getattr(module.handle.hvi.events, event)
+                    system_definition.engines[module.name].events.add(event_id, event)
 
         # Register the FPGA resources used by HVI (exposes the registers)
         if module.fpga:
