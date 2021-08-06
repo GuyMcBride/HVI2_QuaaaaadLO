@@ -28,6 +28,7 @@ from Configuration import (
 
 log = logging.getLogger(__name__)
 
+lsb = 3.0 / 2**16
 
 def main():
     # repeats: Number of triggers to generate
@@ -61,7 +62,7 @@ def main():
     lo1_1_2 = 00e6
     lo1_1_3 = 00e6
 
-    lophase1_1_0 = 0
+    lophase1_1_0 = 90
     lophase4_1_0 = 0
 
     control = mode + (phaseSource << 1) + (frequencySource << 2)
