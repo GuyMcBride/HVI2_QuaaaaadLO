@@ -50,6 +50,13 @@ def configure_hvi(config):
         "HVI_CH1_PhaseIncB0"
     )
     lo_amplitude = config.get_module("AWG_LEAD").get_register_value("AmplitudeIterator")
+    ch1_offset = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
+        "HVI_CH1_Offset"
+    )
+    ch4_offset = config.get_module("AWG_LEAD").fpga.get_hvi_register_value(
+        "HVI_CH4_Offset"
+    )
+
     hvi.set_register(
         "Set Initial Frequency", "AWG_LEAD", "FrequencyIterator", lo_freq_0A
     )
@@ -62,11 +69,11 @@ def configure_hvi(config):
     hvi.writeFpgaRegister("Set CH4 LO0A", "AWG_LEAD", "HVI_CH4_PhaseIncA0", lo_freq_0A)
     hvi.writeFpgaRegister("Set CH4 LO0B", "AWG_LEAD", "HVI_CH4_PhaseIncB0", lo_freq_0B)
 
+    hvi.writeFpgaRegister("Set CH1 Offset", "AWG_LEAD", "HVI_CH1_Offset", ch1_offset)
+    hvi.writeFpgaRegister("Set CH4 Offset", "AWG_LEAD", "HVI_CH4_Offset", ch4_offset)
+
     hvi.set_register(
         "Set Initial Amplitude", "AWG_LEAD", "AmplitudeIterator", lo_amplitude
-    )
-    hvi.set_register(
-        "Set Gap", "AWG_LEAD", "GapIterator", gap
     )
     hvi.delay("Wait for register", "AWG_LEAD", 60)
     hvi.writeFpgaRegister(
@@ -96,6 +103,10 @@ def configure_hvi(config):
     hvi.writeFpgaRegister("Set multB", "AWG_LEAD", "HVI_GLOBAL_MultB", 0x4)
     hvi.readFpgaRegister("Read multAB", "AWG_LEAD", "HVI_GLOBAL_MultAB", "AB", delay=20)
 
+    # Test adding to queue
+    mode = hvi.key.SD_TriggerModes.SWHVITRIG
+    hvi.awg_queue_wave("Test Queuing", "AWG_LEAD", 3, 1, mode, "LoopCounter")
+
     # AWG_FOLLOW_0 Instructions
     hvi.writeFpgaRegister(
         "deassert LO Phase Reset", "AWG_FOLLOW_0", "HVI_GLOBAL_PhaseReset", 0b0000
@@ -114,7 +125,7 @@ def configure_hvi(config):
         "IterationCounter",
         "LESS_THAN",
         iteration_count,
-        delay=70,
+        delay=80,
     )
     hvi.start_syncWhile_register(
         "Iteration Loop", "AWG_LEAD", "LoopCounter", "LESS_THAN", loop_count, delay=570
@@ -139,17 +150,21 @@ def configure_hvi(config):
         hvi.start_sync_multi_sequence_block("Trigger All")
     else:
         hvi.start_sync_multi_sequence_block("Trigger All", delay=260)
+
     # AWG_LEAD Instructions
     hvi.execute_actions("Trigger All", "AWG_LEAD", trigger_awgs)
     hvi.incrementRegister("Increment loop counter", "AWG_LEAD", "LoopCounter")
 #    hvi.delay("Wait Gap time", "AWG_LEAD", "GapIterator")
     hvi.delay("Wait Gap time", "AWG_LEAD", gap)
+
     # AWG_FOLLOW_0 Instructions
     hvi.execute_actions("Trigger All", "AWG_FOLLOW_0", trigger_awgs)
+
     # DIG_0 Instructions
     hvi.execute_actions("Trigger All", "DIG_0", trigger_daqs)
     hvi.end_sync_multi_sequence_block()
     hvi.end_syncWhile()
+
     # End Iteration Loop
     hvi.start_sync_multi_sequence_block("Change Frequency", delay=260)
     # AWG_LEAD Instructions

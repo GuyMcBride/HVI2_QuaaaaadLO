@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from collections import deque
 from typing import List
 
+from numpy.core.numeric import NaN
+
 
 sys.path.append(
     r"C:/Program Files/Keysight/PathWave Test Sync Executive 2020 Update 1.1/api/python"
@@ -97,7 +99,9 @@ def define_system(name: str, **kwargs):
                 else:
                     log.info(f"...adding: {action}")
                     action_id = getattr(module.handle.hvi.actions, action)
-                    system_definition.engines[module.name].actions.add(action_id, action)
+                    system_definition.engines[module.name].actions.add(
+                        action_id, action
+                    )
 
         log.info(f"...Declaring events used by: {module.name}...")
         if module.events is not None:
@@ -403,6 +407,34 @@ def delay_register(name, module, register, delay=10):
 
 
 # AWG specific HVI Sequence Instructions
+
+
+def awg_queue_wave(name, module, channel, wave, mode, start=0, cycles=1, prescaler=0, delay=10):
+    sequence = _get_current_sequence(module)
+    statement_name = _statement_name(sequence, name)
+    log.info(f"......{statement_name}")
+    module = _get_module(module)
+    command = module.handle.hvi.instruction_set.queue_waveform
+    instruction = sequence.add_instruction(statement_name, delay, command.id)
+    if type(channel) is str:
+        channel = sequence.scope.registers[channel]
+    instruction.set_parameter(command.channel.id, channel)
+    if type(wave) is str:
+        wave = sequence.scope.registers[wave]
+    instruction.set_parameter(command.waveform_number.id, wave)
+    if type(mode) is str:
+        mode = sequence.scope.registers[mode]
+    instruction.set_parameter(command.trigger_mode.id, mode)
+    if type(start) is str:
+        start = sequence.scope.registers[start]
+    instruction.set_parameter(command.start_delay.id, start)
+    if type(cycles) is str:
+        cycles = sequence.scope.registers[cycles]
+    instruction.set_parameter(command.cycles.id, cycles)
+    if type(prescaler) is str:
+        prescaler = sequence.scope.registers[prescaler]
+    instruction.set_parameter(command.prescaler.id, prescaler)
+    return
 
 
 def awg_set_amplitude(name, module, channel, value, delay=10):
