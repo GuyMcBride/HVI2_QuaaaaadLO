@@ -338,7 +338,7 @@ def Q(phase):
 
 
 def IQ(phase):
-    return I(phase) + Q(phase << 2**16)
+    return I(phase) + (Q(phase) << 16)
 
 
 if __name__ == "__main__":
