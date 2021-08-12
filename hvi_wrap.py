@@ -325,6 +325,22 @@ def addToRegister(name, module, register, value, delay=10):
     instruction.set_parameter(sequence.instruction_set.add.right_operand.id, value)
 
 
+def subtractFromRegister(name, module, register, value, delay=10):
+    """Adds <value> to <register> in <module>"""
+    sequence = _get_current_sequence(module)
+    statement_name = _statement_name(sequence, name)
+    register_id = sequence.scope.registers[register]
+    log.info(f"......{statement_name}")
+    instruction = sequence.add_instruction(
+        statement_name, delay, sequence.instruction_set.subtract.id
+    )
+    instruction.set_parameter(sequence.instruction_set.subtract.destination.id, register_id)
+    instruction.set_parameter(sequence.instruction_set.subtract.left_operand.id, register_id)
+    if type(value) is str:
+        value = sequence.scope.registers[value]
+    instruction.set_parameter(sequence.instruction_set.subtract.right_operand.id, value)
+
+
 def writeFpgaRegister(name, module, register, value, delay=10):
     """
     Writes <value> to module's FPGA register: <register>.
