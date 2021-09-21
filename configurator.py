@@ -145,9 +145,9 @@ def main():
         Register("HVI_CH1_Amplitude0", 0),
         Register("HVI_CH3_Amplitude0", 0),
         Register("HVI_CH4_Amplitude0", 0),
-        Register("HVI_CH1_Offset", (round(0.5 / lsb) + 2**32) & (2**32-1)),
-        Register("HVI_CH3_Offset", round(0.5 / lsb)),
-        Register("HVI_CH4_Offset", round(0.5 / lsb)),
+        Register("HVI_CH1_Offset", (round(-0.5 / lsb) + 2**32) & (2**32-1)),
+        Register("HVI_CH3_Offset", (round(-0.5 / lsb) + 2**32) & (2**32-1)),
+        Register("HVI_CH4_Offset", (round(-0.5 / lsb) + 2**32) & (2**32-1)),
     ]
 
     # Fpga:

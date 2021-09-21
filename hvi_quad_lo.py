@@ -170,7 +170,9 @@ def configure_hvi(config):
     # AWG_LEAD Instructions
     hvi.set_register("Clear Loop Counter", "AWG_LEAD", "LoopCounter", 0)
     hvi.incrementRegister("Increment Iteration counter", "AWG_LEAD", "IterationCounter")
-    hvi.addToRegister(
+#    hvi.addToRegister(
+#        "Increment Frequency", "AWG_LEAD", "FrequencyIterator", frequency_increment
+    hvi.subtractFromRegister(
         "Increment Frequency", "AWG_LEAD", "FrequencyIterator", frequency_increment
     )
     hvi.addToRegister("Increment Phase", "AWG_LEAD", "PhaseIterator", phase_increment)
